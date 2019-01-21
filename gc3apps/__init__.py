@@ -17,6 +17,7 @@ class Default(object):
     CELLPROFILER_DONEFILE = "cp.done"
     CELLPROFILER_GROUPFILE = "cpgroups.json"
     CELLPROFILER_COMMAND = "cellprofiler -c -r -p {batch_file} -f {start} -l {end} --do-not-write-schema --plugins-directory={plugins} -o {output_folder} --done-file="+CELLPROFILER_DONEFILE
+    CELLPROFILER_DOCKER_COMMAND = "docker run -v {src_mount_point}:{dest_mount_point} smaffiol/cellprofiler-3.1.8 -c -r -p {batch_file} -f {start} -l {end} --do-not-write-schema --plugins-directory={plugins} -o {output_folder} --done-file="+CELLPROFILER_DONEFILE
     CELLPROFILER_GETGROUPS_COMMAND = "cellprofiler -c --print-groups={batch_file}"
 
 

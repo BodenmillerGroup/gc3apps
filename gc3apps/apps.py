@@ -112,11 +112,11 @@ class RunCellprofiler(Application):
         outputs = []
 
         inputs[batch_file] = os.path.basename(batch_file)
-        command = gc3apps.Default.CELLPROFILER_COMMAND.format(batch_file=inputs[batch_file],
-                                                              start=start_index,
-                                                              end=end_index,
-                                                              output_folder="./",
-                                                              plugins=cp_plugins)
+        command = gc3apps.Default.CELLPROFILER__DOCKER_COMMAND.format(batch_file=inputs[batch_file],
+                                                                      start=start_index,
+                                                                      end=end_index,
+                                                                      output_folder="./",
+                                                                      plugins=cp_plugins)
 
         Application.__init__(
             self,
