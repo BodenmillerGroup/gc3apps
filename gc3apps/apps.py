@@ -51,6 +51,25 @@ TP_IMC_STAGE1_BASH = "tp_imc_pre.sh"
 # Applications
 #
 
+class NotifyApplication(Application):
+    """
+    Test application to verify the pre-processing step
+    To be used in conjunction with data_daemon and triggered
+    when a new dataset is added to the dataset folder
+    """
+
+    def __init__(self, data_location, analysis_type, config_file, **extra_args):
+
+        Application.__init__(
+            self,
+            arguments = ["/bin/true"],
+            inputs = [],
+            outputs = [],
+            stdout = 'log',
+            join=True,
+            executables=[],
+            **extra_args)
+
 class TPPrepareFolders(Application):
     """
     parse metadata and create destination folder accordingly
@@ -168,4 +187,6 @@ class RunCellprofilerGetGroups(Application):
                     self.execution.returncode = 0
             except ValueError as vx:
                 # No valid json
+                gc3libs.log.error("Failed parsing {0}. No valid json.".format((os.path.join(self.output_dir,
+                                                                                            self.stdout))))
                 self.execution.returncode = (0,1)

@@ -101,9 +101,8 @@ class InboxProcessingDaemon(SessionBasedDaemon):
             extra['output_dir'] = self.params.output.replace('NAME', extra['jobname'])
 
             self.add(
-                gc3apps.apps.NotifyApplication(
+                gtp_pre.GTumorProfilerCollection(
                     os.path.join(inbox,experiment_folder),
-                    analysis_type,
                     self.params.config_file,
                     **extra))
             
