@@ -140,7 +140,7 @@ class RunCellprofilerGetGroups(Application):
 
     application_name = 'runcellprofiler'
 
-    def __init__(self, batch_file, output_folder,  **extra_args):
+    def __init__(self, batch_file, **extra_args):
 
         inputs = dict()
         outputs = []
