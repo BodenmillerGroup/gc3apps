@@ -58,7 +58,7 @@ class TPPrepareFolders(Application):
     def __init__(self, data_location, analysis_type, config_file, **extra_args):
         """
         """
-        
+
         Application.__init__(
             self,
             arguments = ["python",
@@ -85,7 +85,7 @@ class TPRunIMC(Application):
     def __init__(self, data_location, config_file, **extra_args):
         """
         """
-        
+
         Application.__init__(
             self,
             arguments = ["./{0}".format(os.path.basename(TP_IMC_STAGE1_BASH)),
@@ -106,14 +106,16 @@ class RunCellprofiler(Application):
     Run Cellprofiler in batch mode
     """
 
-    def __init__(self, input_folder, output_folder, batch_file, start_index, end_index, cp_plugins, **extra_args):
+    application_name = 'runcellprofiler'
+
+    def __init__(self, batch_file, input_folder, output_folder, start_index, end_index, cp_plugins, **extra_args):
 
         inputs = dict()
         outputs = []
 
         inputs[batch_file] = os.path.basename(batch_file)
         command = gc3apps.Default.CELLPROFILER_DOCKER_COMMAND.format(batch_file=batch_file,
-                                                                     src_mount_point=input_folder,        
+                                                                     src_mount_point=input_folder,
                                                                      start=start_index,
                                                                      end=end_index,
                                                                      output_folder=output_folder,
@@ -136,16 +138,15 @@ class RunCellprofilerGetGroups(Application):
     @returns: .json file containing image group information
     """
 
-    def __init__(self, output_folder, batch_file,  **extra_args):
+    application_name = 'runcellprofiler'
+
+    def __init__(self, batch_file, output_folder,  **extra_args):
 
         inputs = dict()
         outputs = []
 
-        inputs[batch_file] = os.path.basename(batch_file)
-        
         command = gc3apps.Default.CELLPROFILER_GETGROUPS_COMMAND.format(
-                                                                 batch_file=batch_file,
-                                                                 output_folder=output_folder)
+                                                                 batch_file=batch_file)
 
 	gc3libs.log.debug("In RunCellprofilerGetGroups running {0}.".format(command))
 

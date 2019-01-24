@@ -92,10 +92,10 @@ class GCellprofilerPipeline(StagedTaskCollection):
 
         extra_args = self.extra.copy()
         extra_args['jobname'] = "cp_get_groups"
+        extra_args['output_dir'] = os.path.join(extra_args['output_dir'],
+                                                extra_args['jobname'])
 
-
-        return RunCellprofilerGetGroups(self.output_folder, 
-                                        self.batch_file,
+        return RunCellprofilerGetGroups(self.batch_file,
                                         **extra_args)
 
     def stage1(self):
@@ -124,9 +124,12 @@ class GCellprofilerPipeline(StagedTaskCollection):
             jobname = self.extra["jobname"]
             extra_args = self.extra.copy()
             extra_args['jobname'] = "cp_run_{0}-{1}".format(start,end)
-            tasks.append(RunCellprofiler(self.input_folder,
+            extra_args['output_dir'] = os.path.join(extra_args['output_dir'],
+                                                    extra_args['jobname'])
+
+            tasks.append(RunCellprofiler(self.batch_file,
+                                         self.input_folder,
                                          self.output_folder,
-                                         self.batch_file,
                                          start,
                                          end,
                                          self.plugins,
@@ -155,8 +158,8 @@ class GCellprofilerPipelineScript(SessionBasedScript):
         SessionBasedScript.__init__(
             self,
             version = __version__,
-            application = GCellprofilerPipeline,
-            stats_only_for = GCellprofilerPipeline,
+            application = Application,
+            stats_only_for = Application,
             )
 
     def setup_args(self):
@@ -181,7 +184,7 @@ class GCellprofilerPipelineScript(SessionBasedScript):
 
     def parse_args(self):
 	"""
-	Declare command line arguments. 
+	Declare command line arguments.
 	"""
 	self.params.batch_file = os.path.abspath(self.params.batch_file)
 	self.params.input_folder = os.path.abspath(self.params.input_folder)
@@ -202,7 +205,7 @@ class GCellprofilerPipelineScript(SessionBasedScript):
                                                 extra_args['jobname'])
         return [GCellprofilerPipeline(self.params.batch_file,
                                       self.params.input_folder,
-                                      self.params.output_folder, 
+                                      self.params.output_folder,
                                       self.params.chunks,
                                       self.params.plugins,
                                       **extra_args)]
