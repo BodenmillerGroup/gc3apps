@@ -187,7 +187,7 @@ def transfer_raw_data(raw_data_location, raw_data_list, destination_folder, raw_
 
 # MAIN
 
-def main(location, analysis_type, configuration):
+def main(location, analysis_type, configuration, dryrun=False):
     """
     Run the main workflow:
     * create experiment object
@@ -218,14 +218,15 @@ def main(location, analysis_type, configuration):
                                             config["experiment"]["subfolders"],
                                             config[analysis_type]['allow_append_raw_data'])
 
-        log.info("Creating new branch for analysis scripts")
-        checkout_git_repo(config[analysis_type]['repo']['source'],
-                          os.path.join(destination_folder,
-                                       data.folder_path,
-                                       config[analysis_type]['repo']['location']),
-                          "{0}_{1}".format(analysis_type,
-                                    data.sample_id),
-                          remote_branch=config[analysis_type]['repo']['branch'])
+        if not dryrun:
+            log.info("Creating new branch for analysis scripts")
+            checkout_git_repo(config[analysis_type]['repo']['source'],
+                              os.path.join(destination_folder,
+                                           data.folder_path,
+                                           config[analysis_type]['repo']['location']),
+                              "{0}_{1}".format(analysis_type,
+                                               data.sample_id),
+                              remote_branch=config[analysis_type]['repo']['branch'])
 
     log.info("Transferring data... ")
     transfer_raw_data(data.location,
@@ -252,6 +253,11 @@ if __name__ == "__main__":
     parser.add_argument('configuration', type=str,
                         help='Location of configuration YAML file.') 
 
+    parser.add_argument('-d','--dryrun',
+                        action='store_true',
+                        default=False,
+                        help='Enable dryrun. Default: %(default)s.')
+
     parser.add_argument("-v", "--verbose", help="increase verbosity",
                         action="store_true")
 
@@ -264,4 +270,4 @@ if __name__ == "__main__":
 
     assert os.path.isdir(args.folder_location)
 
-    sys.exit(main(args.folder_location, args.analysis_type, args.configuration))
+    sys.exit(main(args.folder_location, args.analysis_type, args.configuration, args.dryrun))
