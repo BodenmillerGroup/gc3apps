@@ -43,9 +43,15 @@ from gc3libs.quantity import Memory, \
 
 #####################
 # Configuration
-TP_PREPROCESSING = "preprocessing.py"
+TP_PREPROCESSING = "tp_preprocessing.py"
 TP_IMC_STAGE1 = "processing_imc.py"
 TP_IMC_STAGE1_BASH = "tp_imc_pre.sh"
+
+#####################
+# Utilities
+#
+
+whereami = os.path.dirname(os.path.abspath(__file__))
 
 #####################
 # Applications
@@ -118,7 +124,6 @@ class TPRunIMC(Application):
             join=True,
             executables=["./{0}".format(os.path.basename(TP_IMC_STAGE1_BASH))],
             **extra_args)
-
 
 class RunCellprofiler(Application):
     """

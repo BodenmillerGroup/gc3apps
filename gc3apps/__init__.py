@@ -6,6 +6,8 @@ __author__ = """Sergio Maffioletti"""
 __email__ = 'sergio.maffioletti@uzh.ch'
 __version__ = '0.1.0'
 
+import os
+
 # Defaults
 class Default(object):
 
@@ -13,7 +15,7 @@ class Default(object):
     A namespace for all constants and default values used in the
     package.
     """
-    DEFAULT_FILE_CHECK_MARKER = "done.tx"
+    DEFAULT_FILE_CHECK_MARKER = "done.txt"
     CELLPROFILER_DONEFILE = "cp.done"
     CELLPROFILER_GROUPFILE = "cpgroups.json"
     CELLPROFILER_COMMAND = "cellprofiler -c -r -p {batch_file} -f {start} -l {end} --do-not-write-schema --plugins-directory={plugins} -o {output_folder} --done-file="+CELLPROFILER_DONEFILE

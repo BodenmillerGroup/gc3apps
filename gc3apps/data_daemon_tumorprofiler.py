@@ -30,6 +30,7 @@ import sys
 from fnmatch import fnmatch
 from os.path import basename
 
+import gtp_pre
 import gc3apps
 import gc3libs
 from gc3libs import Application, Run, Task
@@ -37,8 +38,6 @@ from gc3libs.cmdline import SessionBasedDaemon, \
     existing_file, existing_directory
 from gc3libs.quantity import Memory, kB, MB, MiB, \
     GB, Duration, hours, minutes, seconds
-
-# DEFAULT_FILE_CHECK_MARKER = "done.txt"
 
 class InboxProcessingDaemon(SessionBasedDaemon):
     """
@@ -96,16 +95,29 @@ class InboxProcessingDaemon(SessionBasedDaemon):
                 gc3libs.log.error("No valid analysis type recognized")
                 return
             
+            gc3libs.log.debug("Analysis type {0}".format(analysis_type))
+
             extra = self.extra.copy()
-            extra['jobname'] = experiment_folder_name
+            extra['jobname'] = "{0}_{1}".format(analysis_type,
+                                                experiment_folder_name)
             extra['output_dir'] = self.params.output.replace('NAME', extra['jobname'])
 
-            self.add(
-                gtp_pre.GTumorProfilerCollection(
-                    os.path.join(inbox,experiment_folder),
-                    self.params.config_file,
-                    **extra))
-            
+            if analysis_type == 'IMC':
+                self.add(
+                    gtp_pre.GTumorProfilerIMC(
+                        os.path.join(inbox,experiment_folder),
+                        self.params.config_file,
+                        **extra))
+            elif analysis_type == 'sMC':
+                self.add(
+                    gtp_pre.GTumorProfilerSMC(
+                        os.path.join(inbox,experiment_folder),
+                        self.params.config_file,
+                        **extra))
+            else:
+                gc3libs.log.error("No valid analysis type {0}.".format(analysis_type))
+                return
+                
     def created(self, inbox, subject):
         """
         Check whether folder has been completed with file_check marker.
@@ -124,5 +136,5 @@ class InboxProcessingDaemon(SessionBasedDaemon):
 ## main: run server
 
 if "__main__" == __name__:
-    from gtp_daemon import InboxProcessingDaemon
+    from data_daemon_tumorprofiler import InboxProcessingDaemon
     InboxProcessingDaemon().run()
