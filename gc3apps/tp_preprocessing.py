@@ -51,15 +51,93 @@ from git import Repo
 import logging.config
 from yaml.parser import ParserError, ScannerError
 
-from gc3apps import tp_data
-
 logging.basicConfig()
 log = logging.getLogger()
 log.propagate = True
 
-
 # Defaults
+FILE_FORMAT = dict()
+FILE_FORMAT['sMC'] = ".fcs"
+FILE_FORMAT['IMC'] = ".mcd"
+FNAME_SPLIT_CRITERIA = "_"
 ANALYSIS_TYPES = ['IMC','sMC']
+
+class TP_data():
+    """
+    Descriptive class.
+    Contains information of a given experiment.
+    """
+
+    def __init__(self, location, analysis_type):
+
+        self.location = location
+        self.analysis_type = analysis_type
+
+        # Get metadata associated to data files
+        self.raw_data = [(data,self._get_metadata(data)) for
+                         data in os.listdir(location)
+                         if self._get_metadata(data)]
+
+        self.metadata = [data for data in self.raw_data if data[0].lower().endswith(FILE_FORMAT[analysis_type])]
+
+        self._check_metadata_consistency()
+        
+    @property
+    def sample_id(self):
+        """
+        Assume 1st found .mcd file as representer
+        of the whole dataset
+        """
+        return self.metadata[0][1][0]
+
+    
+    @property
+    def tumor_type(self):
+        """
+        Assume 1st found .mcd file as representer
+        of the whole dataset
+        """
+        return self.metadata[0][1][1]
+
+    @property
+    def folder_path(self):
+        return os.path.join(self.analysis_type,
+                            self.tumor_type,
+                            self.sample_id)
+
+    def _check_metadata_consistency(self):
+        for data in self.raw_data:
+            assert data[1][0] == self.sample_id, "FATAL: Found data {0} with sample id {1}/ " \
+                "Should be {2}.".format(data[0],
+                                        data[1][0],
+                                        self.sample_id)
+
+    def _get_metadata(self, raw_file):
+        """
+        experiment's metadata.
+        """
+    
+        try: 
+            (id,analysis_ref) = self.__split_filename(raw_file)[0:2]
+            metadata_list = re.findall(r"[a-zA-Z0-9]+",analysis_ref)
+            metadata_list.insert(0,self._get_abpanel(raw_file))
+            metadata_list.insert(0,id[0]) # tumor type
+            metadata_list.insert(0,id) # user id
+            return metadata_list
+        except Exception:
+            log.warning("Failed parsing input data {0}. ignoring".format(raw_file))
+            # raise Error("Failed parsing input data {0}. ignoring".format(raw_file))
+           
+    def _get_abpanel(self, raw_file):
+        """
+        specific parser only to extract panel information
+        @param: filename
+        @return: panel reference as found within filename
+        """
+        return self.__split_filename(raw_file)[1][0]
+
+    def __split_filename(self, filename):
+        return filename.split(FNAME_SPLIT_CRITERIA)
 
 # Utility methods
 def is_append(folder_location):
@@ -197,7 +275,7 @@ def main(location, analysis_type, configuration, dryrun=False):
     log.info("Creating new experiment in " \
              "{0} taking data from {1}".format(location,
                                                destination_folder))
-    data = tp_data.TP_data(location, analysis_type)
+    data = TP_data(location, analysis_type)
 
     log.info("Creating experiment folder structure in {0}".format(data.folder_path))
     are_we_appending = is_append(os.path.join(destination_folder,data.folder_path))

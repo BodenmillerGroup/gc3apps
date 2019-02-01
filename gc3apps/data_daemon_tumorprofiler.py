@@ -54,12 +54,21 @@ class InboxProcessingDaemon(SessionBasedDaemon):
 
     def setup_args(self):
         super(InboxProcessingDaemon, self).setup_args()
-
         self.add_param("config_file", metavar="config",
                        type=existing_file,
                        help="Location of preprocessing pipeline "
                        "configuration file.")
-       
+
+
+    def setup_options(self):
+        super(InboxProcessingDaemon, self).setup_options()
+        self.add_param("-D", "--dryrun",
+                       dest='dryrun',
+                       action='store_true',
+                       default=False,
+                       help="Run in dryrun mode - no actions taken on " \
+                       " input data . Default: %(default)s.")
+
     def _get_inbox_from_subject(self, subject):
         """
         Return the first inbox path corresponding to the location
@@ -101,6 +110,7 @@ class InboxProcessingDaemon(SessionBasedDaemon):
             extra['jobname'] = "{0}_{1}".format(analysis_type,
                                                 experiment_folder_name)
             extra['output_dir'] = self.params.output.replace('NAME', extra['jobname'])
+            extra['dryrun'] = self.params.dryrun
 
             if analysis_type == 'IMC':
                 self.add(

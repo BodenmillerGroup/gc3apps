@@ -106,21 +106,21 @@ class GTumorProfilerIMC(StagedTaskCollection):
                                 self.config,
                                 **extra_args)
 
-    def stage1(self):
-        """
-        Step 1 Generate Dataset
-        """
+    # def stage1(self):
+    #     """
+    #     Step 1 Generate Dataset
+    #     """
 
-        # Check exit status from previous step.
-        rc = self.tasks[0].execution.returncode
+    #     # Check exit status from previous step.
+    #     rc = self.tasks[0].execution.returncode
 
-        jobname = self.extra["jobname"]
-        extra_args = self.extra.copy()
-        extra_args['jobname'] += "_{0}_stage1".format(self.analysis_type)
+    #     jobname = self.extra["jobname"]
+    #     extra_args = self.extra.copy()
+    #     extra_args['jobname'] += "_{0}_stage1".format(self.analysis_type)
 
-        return TPRunIMC(self.data_location,
-                        self.config,
-                        **extra_args)
+    #     return TPRunIMC(self.data_location,
+    #                     self.config,
+    #                     **extra_args)
 
 class GTumorProfilersMC(StagedTaskCollection):
     """
