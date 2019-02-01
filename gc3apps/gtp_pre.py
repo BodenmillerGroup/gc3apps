@@ -122,7 +122,7 @@ class GTumorProfilerIMC(StagedTaskCollection):
     #                     self.config,
     #                     **extra_args)
 
-class GTumorProfilersMC(StagedTaskCollection):
+class GTumorProfilerSMC(StagedTaskCollection):
     """
     Staged collection:
     Step 0: Parse metadata from input file and create destination folder structure

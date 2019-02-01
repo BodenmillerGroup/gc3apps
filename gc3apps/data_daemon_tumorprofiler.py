@@ -30,7 +30,7 @@ import sys
 from fnmatch import fnmatch
 from os.path import basename
 
-import gtp_pre
+import gc3apps.gtp_pre
 import gc3apps
 import gc3libs
 from gc3libs import Application, Run, Task
@@ -114,13 +114,13 @@ class InboxProcessingDaemon(SessionBasedDaemon):
 
             if analysis_type == 'IMC':
                 self.add(
-                    gtp_pre.GTumorProfilerIMC(
+                    gc3apps.gtp_pre.GTumorProfilerIMC(
                         os.path.join(inbox,experiment_folder),
                         self.params.config_file,
                         **extra))
             elif analysis_type == 'sMC':
                 self.add(
-                    gtp_pre.GTumorProfilerSMC(
+                    gc3apps.gtp_pre.GTumorProfilerSMC(
                         os.path.join(inbox,experiment_folder),
                         self.params.config_file,
                         **extra))
