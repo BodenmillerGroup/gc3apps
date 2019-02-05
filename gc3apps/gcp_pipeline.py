@@ -45,6 +45,7 @@ import gc3libs
 from gc3libs import Application
 from gc3apps.apps import RunCellprofiler, \
     RunCellprofilerGetGroups
+from h5parse import CPparser
 from gc3libs.workflow import StagedTaskCollection, \
     ParallelTaskCollection, SequentialTaskCollection
 from gc3libs.quantity import Memory, kB, MB, MiB, GB, \
@@ -74,10 +75,9 @@ class GCellprofilerPipeline(StagedTaskCollection):
     Step1: Generate groups .json file, used to get index size of batch images
     Step2: generate batch and run cellprofiler in batch mode for each batch
     """
-    def __init__(self, batch_file, input_folder, output_folder, chunks, plugins, **extra_args):
+    def __init__(self, batch_file, output_folder, chunks, plugins, **extra_args):
 
         self.batch_file =  batch_file
-        self.input_folder = input_folder
         self.output_folder = output_folder
         self.chunks = chunks
         self.plugins = plugins
@@ -119,6 +119,9 @@ class GCellprofilerPipeline(StagedTaskCollection):
             data = json.load(json_file)
             batch_size = len(data)
 
+        cp = CPparser(self.batch_file)
+        input_folder = cp.get_images_path()
+
         tasks = []
         for start,end in _get_chunks(batch_size, self.chunks):
             jobname = self.extra["jobname"]
@@ -126,10 +129,14 @@ class GCellprofilerPipeline(StagedTaskCollection):
             extra_args['jobname'] = "cp_run_{0}-{1}".format(start,end)
             extra_args['output_dir'] = os.path.join(extra_args['output_dir'],
                                                     extra_args['jobname'])
-
+            output_folder_batch = os.path.join(self.output_folder,"output_{0}-{1}".format(start,end))
+            if not os.path.exists(output_folder_batch):
+                gc3libs.log.debug("Creating new batch folder at {0}.".format(output_folder_batch))
+                os.makedirs(output_folder_batch)
+                os.chmod(output_folder_batch, 0777)
             tasks.append(RunCellprofiler(self.batch_file,
-                                         self.input_folder,
-                                         self.output_folder,
+                                         input_folder,
+                                         output_folder_batch,
                                          start,
                                          end,
                                          self.plugins,
@@ -166,9 +173,6 @@ class GCellprofilerPipelineScript(SessionBasedScript):
         self.add_param('batch_file', type=existing_file,
                        help="Cellprofiler batch file in .h5 format")
 
-        self.add_param("input_folder", type=existing_directory,
-	                       help="Root location of input data")
-	
 	self.add_param("output_folder", type=str, help="Location of the results.")
 
 
@@ -187,7 +191,6 @@ class GCellprofilerPipelineScript(SessionBasedScript):
 	Declare command line arguments.
 	"""
 	self.params.batch_file = os.path.abspath(self.params.batch_file)
-	self.params.input_folder = os.path.abspath(self.params.input_folder)
 	self.params.output_folder = os.path.abspath(self.params.output_folder)
 
     def new_tasks(self, extra):
@@ -204,10 +207,7 @@ class GCellprofilerPipelineScript(SessionBasedScript):
                                                 '.compute',
                                                 extra_args['jobname'])
         return [GCellprofilerPipeline(self.params.batch_file,
-                                      self.params.input_folder,
                                       self.params.output_folder,
                                       self.params.chunks,
                                       self.params.plugins,
                                       **extra_args)]
-
-
