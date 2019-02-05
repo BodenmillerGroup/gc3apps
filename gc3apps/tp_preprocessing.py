@@ -51,15 +51,93 @@ from git import Repo
 import logging.config
 from yaml.parser import ParserError, ScannerError
 
-import tp_data
-
 logging.basicConfig()
 log = logging.getLogger()
 log.propagate = True
 
-
 # Defaults
+FILE_FORMAT = dict()
+FILE_FORMAT['sMC'] = ".fcs"
+FILE_FORMAT['IMC'] = ".mcd"
+FNAME_SPLIT_CRITERIA = "_"
 ANALYSIS_TYPES = ['IMC','sMC']
+
+class TP_data():
+    """
+    Descriptive class.
+    Contains information of a given experiment.
+    """
+
+    def __init__(self, location, analysis_type):
+
+        self.location = location
+        self.analysis_type = analysis_type
+
+        # Get metadata associated to data files
+        self.raw_data = [(data,self._get_metadata(data)) for
+                         data in os.listdir(location)
+                         if self._get_metadata(data)]
+
+        self.metadata = [data for data in self.raw_data if data[0].lower().endswith(FILE_FORMAT[analysis_type])]
+
+        self._check_metadata_consistency()
+        
+    @property
+    def sample_id(self):
+        """
+        Assume 1st found .mcd file as representer
+        of the whole dataset
+        """
+        return self.metadata[0][1][0]
+
+    
+    @property
+    def tumor_type(self):
+        """
+        Assume 1st found .mcd file as representer
+        of the whole dataset
+        """
+        return self.metadata[0][1][1]
+
+    @property
+    def folder_path(self):
+        return os.path.join(self.analysis_type,
+                            self.tumor_type,
+                            self.sample_id)
+
+    def _check_metadata_consistency(self):
+        for data in self.raw_data:
+            assert data[1][0] == self.sample_id, "FATAL: Found data {0} with sample id {1}/ " \
+                "Should be {2}.".format(data[0],
+                                        data[1][0],
+                                        self.sample_id)
+
+    def _get_metadata(self, raw_file):
+        """
+        experiment's metadata.
+        """
+    
+        try: 
+            (id,analysis_ref) = self.__split_filename(raw_file)[0:2]
+            metadata_list = re.findall(r"[a-zA-Z0-9]+",analysis_ref)
+            metadata_list.insert(0,self._get_abpanel(raw_file))
+            metadata_list.insert(0,id[0]) # tumor type
+            metadata_list.insert(0,id) # user id
+            return metadata_list
+        except Exception:
+            log.warning("Failed parsing input data {0}. ignoring".format(raw_file))
+            # raise Error("Failed parsing input data {0}. ignoring".format(raw_file))
+           
+    def _get_abpanel(self, raw_file):
+        """
+        specific parser only to extract panel information
+        @param: filename
+        @return: panel reference as found within filename
+        """
+        return self.__split_filename(raw_file)[1][0]
+
+    def __split_filename(self, filename):
+        return filename.split(FNAME_SPLIT_CRITERIA)
 
 # Utility methods
 def is_append(folder_location):
@@ -126,10 +204,9 @@ def parse_config_file(config_file):
         try:
             cfg = yaml.load(fd)
             assert cfg.has_key("experiment"), "Missing 'experiment' section in config file"
-            assert cfg["experiment"].has_key("folder_prefix"), "Missing 'experiment' section in config file"
-            assert cfg["experiment"].has_key("subfolders"), "Missing 'experiment' section in config file"
-            assert cfg["experiment"].has_key("raw_data_immune"), "Missing 'experiment' section in config file"
-            assert cfg["experiment"].has_key("raw_data_tumor"), "Missing 'raw_data_tumor' section in config file"
+            assert cfg["experiment"].has_key("panels"), "Missing 'panels' section in config file"
+            assert cfg["experiment"].has_key("folder_prefix"), "Missing 'folder_prefix' section in config file"
+            assert cfg["experiment"].has_key("subfolders"), "Missing 'subfolders' section in config file"
 
             for key in ANALYSIS_TYPES:
                 assert cfg.has_key(key), "Missing {0} section in config file".format(key)
@@ -147,7 +224,7 @@ def parse_config_file(config_file):
             raise
     return None
 
-def transfer_raw_data(raw_data_location, raw_data_list, destination_folder, raw_data_immune, raw_data_tumor, allow_append=False, move=True):
+def transfer_raw_data(raw_data_location, raw_data_list, destination_folder, panels, allow_append=False, move=True):
     """
     Populate destination folder's `raw` data.
     @parameter: instance of TPdata
@@ -157,18 +234,14 @@ def transfer_raw_data(raw_data_location, raw_data_list, destination_folder, raw_
     """
 
     for fraw,metadata in raw_data_list:
-        if metadata[2] == "I":
-            # Immune data
-            destination = os.path.join(destination_folder,
-                                       raw_data_immune,
-                                       fraw)
-        elif metadata[2] == "M":
-            # Tumor data
-            destination = os.path.join(destination_folder,
-                                       raw_data_tumor,
-                                       fraw)
-        else:
-            raise Exception("Wrong panel reference: {0}".format(metadata[2]))
+        assert metadata[2] in panels.keys(), \
+            "Panel reference {0}, not in list of valid panels: " \
+            "{1}".format(cfg["experiment"]["panels"].keys())
+
+
+        destination = os.path.join(destination_folder,
+                                   panels[metadata[2]],
+                                   fraw)
         try:
             if not move:
                 os.symlink(os.path.join(raw_data_location,fraw),destination)
@@ -202,7 +275,7 @@ def main(location, analysis_type, configuration, dryrun=False):
     log.info("Creating new experiment in " \
              "{0} taking data from {1}".format(location,
                                                destination_folder))
-    data = tp_data.TP_data(location, analysis_type)
+    data = TP_data(location, analysis_type)
 
     log.info("Creating experiment folder structure in {0}".format(data.folder_path))
     are_we_appending = is_append(os.path.join(destination_folder,data.folder_path))
@@ -213,9 +286,15 @@ def main(location, analysis_type, configuration, dryrun=False):
                                                                                 analysis_type)
 
     if not are_we_appending:
+        # Create destination folder following
+        # configuration file
+        raw_subfolders = []
+        raw_subfolders.extend(config["experiment"]["subfolders"])
+        raw_subfolders.extend(config["experiment"]["panels"].values())
+
         create_destination_folder_structure(os.path.join(destination_folder,
                                                          data.folder_path),
-                                            config["experiment"]["subfolders"],
+                                            raw_subfolders,
                                             config[analysis_type]['allow_append_raw_data'])
 
         if not dryrun:
@@ -232,9 +311,9 @@ def main(location, analysis_type, configuration, dryrun=False):
     transfer_raw_data(data.location,
                       data.raw_data,
                       os.path.join(destination_folder, data.folder_path),
-                      config['experiment']['raw_data_immune'],
-                      config['experiment']['raw_data_tumor'],
-                      config[analysis_type]['allow_append_raw_data'])
+                      config['experiment']['panels'],
+                      config[analysis_type]['allow_append_raw_data'],
+                      not dryrun)
 
     log.info("Done")
 

@@ -43,9 +43,15 @@ from gc3libs.quantity import Memory, \
 
 #####################
 # Configuration
-TP_PREPROCESSING = "preprocessing.py"
+TP_PREPROCESSING = "tp_preprocessing.py"
 TP_IMC_STAGE1 = "processing_imc.py"
 TP_IMC_STAGE1_BASH = "tp_imc_pre.sh"
+
+#####################
+# Utilities
+#
+
+whereami = os.path.dirname(os.path.abspath(__file__))
 
 #####################
 # Applications
@@ -78,14 +84,21 @@ class TPPrepareFolders(Application):
         """
         """
 
-        Application.__init__(
-            self,
-            arguments = ["python",
+        cmd = ["python",
                          os.path.basename(TP_PREPROCESSING),
                          data_location,
                          analysis_type,
                          config_file
-            ],
+               ]
+
+
+        gc3libs.log.debug("dryrun setting: {0}".format(extra_args['dryrun']))
+        if extra_args['dryrun']:
+            cmd.append("--dryrun")
+        
+        Application.__init__(
+            self,
+            arguments = cmd,
             inputs = [os.path.join(whereami,TP_PREPROCESSING)],
             outputs = [],
             stdout = 'log',
@@ -105,20 +118,23 @@ class TPRunIMC(Application):
         """
         """
 
-        Application.__init__(
-            self,
-            arguments = ["./{0}".format(os.path.basename(TP_IMC_STAGE1_BASH)),
+        cmd = ["./{0}".format(os.path.basename(TP_IMC_STAGE1_BASH)),
                          os.path.basename(TP_IMC_STAGE1),
                          data_location,
-                         config_file
-            ],
+                         config_file,
+            ]
+        if extra_args['dryrun']:
+            cmd.append("--dryrun")
+        
+        Application.__init__(
+            self,
+            arguments = cmd,
             inputs = [os.path.join(whereami,TP_IMC_STAGE1), os.path.join(whereami,TP_IMC_STAGE1_BASH)],
             outputs = [],
             stdout = 'log',
             join=True,
             executables=["./{0}".format(os.path.basename(TP_IMC_STAGE1_BASH))],
             **extra_args)
-
 
 class RunCellprofiler(Application):
     """

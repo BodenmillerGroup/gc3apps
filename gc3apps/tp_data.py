@@ -27,6 +27,7 @@ log.propagate = True
 FILE_FORMAT = dict()
 FILE_FORMAT['sMC'] = ".fcs"
 FILE_FORMAT['IMC'] = ".mcd"
+FNAME_SPLIT_CRITERIA = "_"
 
 class TP_data():
     """
@@ -84,7 +85,7 @@ class TP_data():
         """
     
         try: 
-            (id,analysis_ref) = raw_file.split("__")[0:2]
+            (id,analysis_ref) = self.__split_filename(raw_file)[0:2]
             metadata_list = re.findall(r"[a-zA-Z0-9]+",analysis_ref)
             metadata_list.insert(0,self._get_abpanel(raw_file))
             metadata_list.insert(0,id[0]) # tumor type
@@ -93,11 +94,14 @@ class TP_data():
         except Exception:
             log.warning("Failed parsing input data {0}. ignoring".format(raw_file))
             # raise Error("Failed parsing input data {0}. ignoring".format(raw_file))
-
+           
     def _get_abpanel(self, raw_file):
         """
         specific parser only to extract panel information
         @param: filename
         @return: panel reference as found within filename
         """
-        return raw_file.split("__")[1][0]
+        return self.__split_filename(raw_file)[1][0]
+
+    def __split_filename(self, filename):
+        return filename.split(FNAME_SPLIT_CRITERIA)

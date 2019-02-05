@@ -34,10 +34,10 @@ __docformat__ = 'reStructuredText'
 __version__ = '1.0.2'
 
 import os
-from pkg_resources import Requirement, resource_filename
-
 import gc3libs
+import gc3apps
 from gc3libs import Application
+from gc3apps.apps import TPPrepareFolders, TPRunIMC
 from gc3libs.workflow import StagedTaskCollection, \
     ParallelTaskCollection, SequentialTaskCollection
 from gc3libs.quantity import Memory, kB, MB, MiB, GB, \
@@ -74,63 +74,10 @@ def _get_analysis_type(location):
 
 
 #####################
-# Applications
-#
-class GTumorProfilerRunIMC(Application):
-    """
-    Run first part of IMC preprocessing pipeline:
-    * generarte subfolders in `derived`
-    * convert input MCD in OMETiff
-    * Run CP3 pipeline from ImcSegmentationPipeline
-    """
-    def __init__(self, data_location, analysis_type, config_file, **extra_args):
-        """
-        """
-        
-        Application.__init__(
-            self,
-            arguments = ["./{0}".format(os.path.basename(TP_IMC_STAGE1_BASH)),
-                         os.path.basename(TP_IMC_STAGE1),
-                         data_location,
-                         analysis_type,
-                         config_file
-            ],
-            inputs = [os.path.join(whereami,TP_IMC_STAGE1), os.path.join(whereami,TP_IMC_STAGE1_BASH)],
-            outputs = [],
-            stdout = 'gtp_imc.log',
-            join=True,
-            executables=["./{0}".format(os.path.basename(TP_IMC_STAGE1_BASH))],
-            **extra_args)
-
-class GTumorProfilerPrepareFolders(Application):
-    """
-    parse metadata and create destination folder accordingly
-    """
-    def __init__(self, data_location, analysis_type, config_file, **extra_args):
-        """
-        """
-        
-        Application.__init__(
-            self,
-            arguments = ["python",
-                         os.path.basename(TP_PREPROCESSING),
-                         data_location,
-                         analysis_type,
-                         config_file
-            ],
-            inputs = [os.path.join(whereami,TP_PREPROCESSING)],
-            outputs = [],
-            stdout = 'gtp_pre0.log',
-            join=True,
-            executables=[],
-            **extra_args)
-
-
-#####################
 # StagedTaskCollection class
 #
 
-class GTumorProfilerCollection(StagedTaskCollection):
+class GTumorProfilerIMC(StagedTaskCollection):
     """
     Staged collection:
     Step 0: Parse metadata from input file and create destination folder structure
@@ -154,28 +101,52 @@ class GTumorProfilerCollection(StagedTaskCollection):
         extra_args = self.extra.copy()
         extra_args['jobname'] += "_{0}_stage0".format(self.analysis_type)
 
-        return GTumorProfilerPrepareFolders(self.data_location,
-                                            self.analysis_type,
-                                            self.config,
-                                            **extra_args)
+        return TPPrepareFolders(self.data_location,
+                                self.analysis_type,
+                                self.config,
+                                **extra_args)
 
-    def stage1(self):
+    # def stage1(self):
+    #     """
+    #     Step 1 Generate Dataset
+    #     """
+
+    #     # Check exit status from previous step.
+    #     rc = self.tasks[0].execution.returncode
+
+    #     jobname = self.extra["jobname"]
+    #     extra_args = self.extra.copy()
+    #     extra_args['jobname'] += "_{0}_stage1".format(self.analysis_type)
+
+    #     return TPRunIMC(self.data_location,
+    #                     self.config,
+    #                     **extra_args)
+
+class GTumorProfilerSMC(StagedTaskCollection):
+    """
+    Staged collection:
+    Step 0: Parse metadata from input file and create destination folder structure
+    Step 1: if 'sMC' run preprocessing R script and verify results
+    """
+    def __init__(self, data_location, config_file, **extra_args):
+
+        self.data_location = data_location
+        self.extra = extra_args
+        self.config = config_file
+        self.analysis_type = _get_analysis_type(data_location)
+        assert self.analysis_type, "Failed getting analysis type from {0}".format(data_location)
+
+        StagedTaskCollection.__init__(self)
+        
+    def stage0(self):
         """
-        Step 1 Generate Dataset
+        Step 0: Generate Dataset
         """
 
-        # Check exit status from previous step.
-        rc = self.tasks[0].execution.returncode
-        if rc is not None and rc != 0:
-            return rc
-
-        jobname = self.extra["jobname"]
         extra_args = self.extra.copy()
-        extra_args['jobname'] += "_{0}_stage1".format(self.analysis_type)
+        extra_args['jobname'] += "_{0}_stage0".format(self.analysis_type)
 
-        if self.analysis_type == "IMC":
-            return GTumorProfilerRunIMC(self.data_location,
-                                        self.analysis_type,
-                                        self.config,
-                                        **extra_args)
-
+        return TPPrepareFolders(self.data_location,
+                                self.analysis_type,
+                                self.config,
+                                **extra_args)
