@@ -35,21 +35,27 @@ class CPparser(object):
     def __init__(self, path):
         self.path = path
         self.obj = h5py.File(path,'r')
-        self.date = self.obj['/Measurements'].keys()[0]
-        self.version = self._verify_version() 
-        
-    def _verify_version(self):
+	self.date = self.obj['/Measurements'].keys()[0]
+
+	self.group = os.path.join('Measurements',
+              	                  self.date,
+                	       	  'Experiment',
+                                  'CellProfiler_Version',
+                                  'data')
+
+	self.version = self.obj[self.group][0]
+	self._verify_version(self.version)
+
+	self.images_number = len(self.obj[self._get_image_group()])
+        self.images_path = self.obj[self._get_image_group()][0]
+	
+ 	self.obj.close()
+
+    def _verify_version(self, h5version):
         """
         Return Cellprofiler version
         """
-        group = os.path.join('Measurements',
-                              self.date,
-                             'Experiment',
-                             'CellProfiler_Version',
-                             'data')
-        version = self.obj[group][0]
-        assert version in self.SUPPORTED_VERSIONS, "Cellprofiler {0} version not supported.".format(version)
-        return version
+        assert h5version in self.SUPPORTED_VERSIONS, "Cellprofiler {0} version not supported.".format(h5version)
 
     def _get_image_group(self):
         """
@@ -68,22 +74,6 @@ class CPparser(object):
 
         return group
 
-    def get_images_number(self):
-        """
-        Return total number of images
-        """
-        group = self._get_image_group()
-        return len(self.obj[group]) 
-  
-
-    def get_images_path(self):
-        """
-        Return images
-        """
-        group = self._get_image_group()
-        return self.obj[group][0]
-
-
 def h5_obj_print(path):
     """
     Print HDF5 file metadata
@@ -95,13 +85,4 @@ def h5_obj_print(path):
     print 'Number of images: {0}'.format(cp.get_images_number())
     print 'Path to images: {0}'.format(cp.get_images_path())
     print
-
-if __name__ == "__main__":
-
-    h5_obj_print("/home/diego/work/dev/h5_parsing/Batch_data.h5")
-    h5_obj_print("/home/diego/work/dev/h5_parsing/test/example_csv/Batch_data.h5")
-    h5_obj_print("/home/diego/work/dev/h5_parsing/test/example_grouping/Batch_data.h5")
-    h5_obj_print("/home/diego/work/dev/h5_parsing/test/example_simple/Batch_data.h5")
-    h5_obj_print("/home/diego/work/dev/h5_parsing/test/example_samefolder/Batch_data.h5")
-    h5_obj_print("/home/diego/work/dev/h5_parsing/test/example_metadata/Batch_data.h5")
 
