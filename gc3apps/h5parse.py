@@ -82,7 +82,6 @@ def h5_obj_print(path):
 
     print 'Experiment: {0}'.format(cp.date)
     print 'CellProfiler Version: {0}'.format(cp.version)
-    print 'Number of images: {0}'.format(cp.get_images_number())
-    print 'Path to images: {0}'.format(cp.get_images_path())
+    print 'Number of images: {0}'.format(cp.images_number)
+    print 'Path to images: {0}'.format(cp.images_path)
     print
-

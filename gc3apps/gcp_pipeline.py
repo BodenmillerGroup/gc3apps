@@ -45,7 +45,7 @@ import gc3libs
 from gc3libs import Application
 from gc3apps.apps import RunCellprofiler, \
     RunCellprofilerGetGroups
-from h5parse import CPparser
+from gc3apps.h5parse import CPparser
 from gc3libs.workflow import StagedTaskCollection, \
     ParallelTaskCollection, SequentialTaskCollection
 from gc3libs.quantity import Memory, kB, MB, MiB, GB, \
@@ -120,7 +120,7 @@ class GCellprofilerPipeline(StagedTaskCollection):
             batch_size = len(data)
 
         cp = CPparser(self.batch_file)
-        input_folder = cp.get_images_path()
+        input_folder = cp.images_path
 
         tasks = []
         for start,end in _get_chunks(batch_size, self.chunks):
