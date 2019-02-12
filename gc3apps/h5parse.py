@@ -34,22 +34,44 @@ class CPparser(object):
 
     def __init__(self, path):
         self.path = path
-        self.obj = h5py.File(path,'r')
-	self.date = self.obj['/Measurements'].keys()[0]
+	assert os.path.isfile(path), "File {0} no found.".format(path)
 
-	self.group = os.path.join('Measurements',
-              	                  self.date,
-                	       	  'Experiment',
-                                  'CellProfiler_Version',
-                                  'data')
+        with h5py.File(path,'r') as obj:
+	    self.date = obj['/Measurements'].keys()[0]
 
-	self.version = self.obj[self.group][0]
-	self._verify_version(self.version)
+	    self.group = os.path.join('Measurements',
+                                      self.date,
+                                      'Experiment',
+                                      'CellProfiler_Version',
+                                      'data')
 
-	self.images_number = len(self.obj[self._get_image_group()])
-        self.images_path = self.obj[self._get_image_group()][0]
-	
- 	self.obj.close()
+	    self.version = obj[self.group][0]
+	    self._verify_version(self.version)
+
+            group_image = os.path.join('/Measurements',
+                                       self.date,
+                                       'Image')
+
+            group_paths = [os.path.join(group_image,field,'data') for field in obj[group_image].keys() \
+                          if field.startswith('PathName')]
+
+            # Extract the real paths to data
+            self.paths = [obj[group_path][0] for group_path in group_paths]
+            # Get the path of the data root folder
+	    for path in self.paths:
+	        assert os.path.isdir(path), "Path {0} not found".format(path)
+ 
+    def __repr__(self):
+	return """
+Experiment: {0}
+CellProfiler Version: {1}
+Paths to images: {2}
+	""".format(self.date,self.version,self.paths)
+
+        # return "Experiment: {0}\tCellProfiler Version: {1}\tPaths to images: {2}".format(self.date,
+        #                                                     			         self.version,
+	#								                 self.paths)
+
 
     def _verify_version(self, h5version):
         """
@@ -57,31 +79,5 @@ class CPparser(object):
         """
         assert h5version in self.SUPPORTED_VERSIONS, "Cellprofiler {0} version not supported.".format(h5version)
 
-    def _get_image_group(self):
-        """
-        Return group to images
-        """
-        group = os.path.join('Measurements',
-                             self.date,
-                             'Image',
-                             'PathName_bfimage',
-                             'data')
-
-        if self.version == '3.1.5': 
-            temp = group.split('/')
-            temp[3] = 'PathName_FullStack'
-            group = os.path.join(*temp)
-
-        return group
-
-def h5_obj_print(path):
-    """
-    Print HDF5 file metadata
-    """
-    cp = CPparser(path)         
-
-    print 'Experiment: {0}'.format(cp.date)
-    print 'CellProfiler Version: {0}'.format(cp.version)
-    print 'Number of images: {0}'.format(cp.images_number)
-    print 'Path to images: {0}'.format(cp.images_path)
-    print
+if __name__ == "__main__":
+    cp = CPparser('./tests/test_h5_files/example_grouping/Batch_data.h5')

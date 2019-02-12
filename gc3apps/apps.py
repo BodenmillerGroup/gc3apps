@@ -36,6 +36,7 @@ import os
 import json
 import gc3apps
 import gc3libs
+from gc3apps.h5parse import CPparser
 from gc3libs import Application
 from gc3libs.quantity import Memory, \
     kB, MB, MiB, GB, Duration, hours,\
@@ -143,14 +144,16 @@ class RunCellprofiler(Application):
 
     application_name = 'runcellprofiler'
 
-    def __init__(self, batch_file, input_folder, output_folder, start_index, end_index, cp_plugins, **extra_args):
+    def __init__(self, batch_file, output_folder, start_index, end_index, cp_plugins, **extra_args):
 
         inputs = dict()
         outputs = []
 
+        cparser = CPparser(batch_file)
+
         inputs[batch_file] = os.path.basename(batch_file)
         command = gc3apps.Default.CELLPROFILER_DOCKER_COMMAND.format(batch_file=batch_file,
-                                                                     src_mount_point=input_folder,
+                                                                     data_mount_point=gc3apps.Default.DEFAULT_BBSERVER_MOUNT_POINT,
                                                                      start=start_index,
                                                                      end=end_index,
                                                                      output_folder=output_folder,
@@ -205,13 +208,18 @@ class RunCellprofilerGetGroups(Application):
 
 	gc3libs.log.debug("In RunCellprofilerGetGroups running 'termianted'.")
 
-        with open(os.path.join(self.output_dir,self.stdout),"r") as fd:
-            try:
-                data = json.load(fd)
-                if len(data) > 0:
-                    self.execution.returncode = 0
-            except ValueError as vx:
-                # No valid json
-                gc3libs.log.error("Failed parsing {0}. No valid json.".format((os.path.join(self.output_dir,
+        try:
+            with open(os.path.join(self.output_dir,self.stdout),"r") as fd:
+                try:
+                    data = json.load(fd)
+                    gc3libs.log.debug("Datalen {}".format(len(data)))
+                    if len(data) > 0:
+                        self.execution.returncode = (0,0)
+                except ValueError as vx:
+                    # No valid json
+                    gc3libs.log.error("Failed parsing {0}. No valid json.".format((os.path.join(self.output_dir,
                                                                                             self.stdout))))
-                self.execution.returncode = (0,1)
+                    self.execution.returncode = (0,1)
+        except IOError as ix:
+            # Json file not found 
+            gc3libs.log.error("Required json file at {0} was not found".format(os.path.join(self.output_dir,self.stdout)))

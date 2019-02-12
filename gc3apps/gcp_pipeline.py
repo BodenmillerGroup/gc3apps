@@ -45,7 +45,6 @@ import gc3libs
 from gc3libs import Application
 from gc3apps.apps import RunCellprofiler, \
     RunCellprofilerGetGroups
-from gc3apps.h5parse import CPparser
 from gc3libs.workflow import StagedTaskCollection, \
     ParallelTaskCollection, SequentialTaskCollection
 from gc3libs.quantity import Memory, kB, MB, MiB, GB, \
@@ -119,9 +118,6 @@ class GCellprofilerPipeline(StagedTaskCollection):
             data = json.load(json_file)
             batch_size = len(data)
 
-        cp = CPparser(self.batch_file)
-        input_folder = cp.images_path
-
         tasks = []
         for start,end in _get_chunks(batch_size, self.chunks):
             jobname = self.extra["jobname"]
@@ -135,7 +131,6 @@ class GCellprofilerPipeline(StagedTaskCollection):
                 os.makedirs(output_folder_batch)
                 os.chmod(output_folder_batch, 0777)
             tasks.append(RunCellprofiler(self.batch_file,
-                                         input_folder,
                                          output_folder_batch,
                                          start,
                                          end,
