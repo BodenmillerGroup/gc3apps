@@ -150,9 +150,9 @@ class RunCellprofiler(Application):
         outputs = []
 
         cparser = CPparser(batch_file)
-
         inputs[batch_file] = os.path.basename(batch_file)
-        command = gc3apps.Default.CELLPROFILER_DOCKER_COMMAND.format(batch_file=batch_file,
+
+        command = gc3apps.Default.CELLPROFILER_DOCKER_COMMAND.format(batch_file="$PWD/{0}".format(inputs[batch_file]),
                                                                      data_mount_point=gc3apps.Default.DEFAULT_BBSERVER_MOUNT_POINT,
                                                                      start=start_index,
                                                                      end=end_index,
@@ -178,26 +178,37 @@ class RunCellprofilerGetGroups(Application):
 
     application_name = 'runcellprofiler'
 
-    def __init__(self, batch_file, **extra_args):
+    def __init__(self, pipeline, image_data_folder, plugins, **extra_args):
 
         inputs = dict()
-        outputs = []
+        outputs = ["./output/"]
 
-        command = gc3apps.Default.CELLPROFILER_GETGROUPS_COMMAND.format(
-                                                                 batch_file=batch_file)
+        inputs[pipeline] = os.path.basename(pipeline)
+        inputs[os.path.join(whereami,
+                            gc3apps.Default.GET_CP_GROUPS_FILE)] = gc3apps.Default.GET_CP_GROUPS_FILE
+        
 
-	gc3libs.log.debug("In RunCellprofilerGetGroups running {0}.".format(command))
+        self.json_file = os.path.join(extra_args['output_dir'],"result.json")
+        self.batch_file = os.path.join(extra_args['output_dir'], "Batch_data.h5")
+
+        cmd = gc3apps.Default.GET_CP_GROUPS_CMD.format(output="./output",
+                                                       pipeline=inputs[pipeline],
+                                                       image_data=image_data_folder,
+                                                       cp_plugins=plugins)
+
+	gc3libs.log.debug("In RunCellprofilerGetGroups running {0}.".format(cmd))
 
         Application.__init__(
             self,
-            arguments = command,
+            arguments = cmd,
             inputs = inputs,
-            outputs = [gc3apps.Default.CELLPROFILER_GROUPFILE],
-            stdout = gc3apps.Default.CELLPROFILER_GROUPFILE,
+            outputs = outputs,
+            stdout = "log.out",
             stderr = "log.err",
             join=False,
-            executables=[],
+            executables=["./{0}".format(gc3apps.Default.GET_CP_GROUPS_FILE)],
             **extra_args)
+
 
     def terminated(self):
         """
@@ -209,17 +220,15 @@ class RunCellprofilerGetGroups(Application):
 	gc3libs.log.debug("In RunCellprofilerGetGroups running 'termianted'.")
 
         try:
-            with open(os.path.join(self.output_dir,self.stdout),"r") as fd:
+            with open(self.json_file,"r") as fd:
                 try:
                     data = json.load(fd)
-                    gc3libs.log.debug("Datalen {}".format(len(data)))
                     if len(data) > 0:
-                        self.execution.returncode = (0,0)
+                        self.execution.returncode = (0, 0)
                 except ValueError as vx:
                     # No valid json
-                    gc3libs.log.error("Failed parsing {0}. No valid json.".format((os.path.join(self.output_dir,
-                                                                                            self.stdout))))
+                    gc3libs.log.error("Failed parsing {0}. No valid json.".format(self.json_file))
                     self.execution.returncode = (0,1)
         except IOError as ix:
             # Json file not found 
-            gc3libs.log.error("Required json file at {0} was not found".format(os.path.join(self.output_dir,self.stdout)))
+            gc3libs.log.error("Required json file at {0} was not found".format(self.json_file))

@@ -23,6 +23,8 @@ class Default(object):
     CELLPROFILER_DOCKER_COMMAND = "sudo docker run -v {batch_file}:{batch_file} -v {data_mount_point}:{data_mount_point} -v {output_folder}:/output sparkvilla/cellprofiler:3.1.8 -c -r -p {batch_file} -f {start} -l {end} --do-not-write-schema --plugins-directory={plugins} -o /output --done-file=/output/"+CELLPROFILER_DONEFILE
     CELLPROFILER_GETGROUPS_COMMAND = "sudo docker run -v {batch_file}:{batch_file} sparkvilla/cellprofiler:3.1.8 cellprofiler -c --print-groups={batch_file}"
 
+    GET_CP_GROUPS_FILE = "cp_pipeline_get_groups.sh"
+    GET_CP_GROUPS_CMD = "./" + GET_CP_GROUPS_FILE + " -o {output} -p {pipeline} -i {image_data} -w {cp_plugins}"
 
 # Utilities
 
