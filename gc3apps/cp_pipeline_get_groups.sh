@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 #   Copyright (C) 2018, 2019 - bodenmillerlab, University of Zurich
 #
@@ -21,26 +21,13 @@
 
 me=$(basename "$0")
 
-
-# DBG
-echo "[start]"
-
-sleep 10
-
-echo "DBG: test whether mount point is already there... "
-mount
-
-echo "DBG: test whether mount point is already there... "
-ls -la /mnt/bbvolume
-
-echo "DBG: [done]"
-
 ## defaults
 output=`realpath ./output`
 pipeline=`realpath ./pipeline.cppipe`
 images=`realpath ./images`
 plugins=`realpath ./plugins`
 mode_list="get_groups run"
+dockerimage="bblab/cellprofiler:3.1.8"
 
 ## helper functions
 
@@ -50,6 +37,15 @@ function die () {
     (echo -n "$me: ERROR: ";
         if [ $# -gt 0 ]; then echo "$@"; else cat; fi) 1>&2
     exit $rc
+}
+
+function check_mount () {
+    sleep 10
+    mountpoint -q $1
+    if  [ $? -ne 0 ]; then
+	echo "DBG: Mount point '$1' not valid"
+	exit 1
+    fi
 }
 
 function check_mode () {
@@ -97,14 +93,24 @@ Options:
   -p		Location of .cppipe file
   -i		Images location
   -w		Additional CellProfiler Plugins folder
+  -d		Docker image
 __EOF__
 }
 
 
+###############################
+# main
+#
+
+
+## check mountpoint
+check_mount /mnt/bbvolume
+
+
 ## parse command-line
 
-short_opts='hvo:p:i:w:'
-long_opts='help,verbose,output,pipeline,images,plugins'
+short_opts='hvo:p:i:w:d:'
+long_opts='help,verbose,output,pipeline,images,plugins,docker'
 
 getopt -T > /dev/null
 rc=$?
@@ -133,13 +139,11 @@ while [ $# -gt 0 ]; do
 	--pipeline|-p) pipeline=`realpath $2`; shift ;;
 	--images|-i)   images=`realpath $2`; shift ;;
 	--plugins|-w)  plugins=`realpath $2`; shift ;;
+	--docker|-d)   dockerimage=$2; shift ;;	
         --)            shift; break ;;
     esac
     shift
 done
-
-
-## sanity checks
 
 
 ## main
@@ -152,7 +156,7 @@ fi
 # create filelist.txt
 generate_file_list $images $output/filelist.txt
 
-cmd="sudo docker run -v ${output}:/output -v ${pipeline}:/tmp/pipeline.cppipe -v ${output}/filelist.txt:/tmp/filelist.txt -v ${plugins}:${plugins}:ro -v ${images}:${images}:ro sparkvilla/cellprofiler:3.1.8 cellprofiler -c -r --file-list=/tmp/filelist.txt --plugins-directory ${plugins} -p /tmp/pipeline.cppipe -o /output --done-file=/output/done.txt"
+cmd="sudo docker run -v ${output}:/output -v ${pipeline}:/tmp/pipeline.cppipe -v ${output}/filelist.txt:/tmp/filelist.txt -v ${plugins}:${plugins}:ro -v ${images}:${images}:ro ${dockerimage} -c -r --file-list=/tmp/filelist.txt --plugins-directory ${plugins} -p /tmp/pipeline.cppipe -o /output --done-file=/output/done.txt"
 echo -n "Generating CellProfiler Batch ... "
 $cmd 1>${output}/log 2>${output}/err
 
@@ -163,7 +167,7 @@ fi
 echo ["ok"]
 
 echo -n "Generating CellProfiler groups ... "
-cmd="sudo docker run -v ${output}:/output sparkvilla/cellprofiler:3.1.8 cellprofiler -c --print-groups=/output/Batch_data.h5"
+cmd="sudo docker run -v ${output}:/output ${dockerimage} -c --print-groups=/output/Batch_data.h5"
 $cmd 1>${output}/result.json 2>>${output}/err
 
 if ! [ -s ${output}/result.json ]; then
