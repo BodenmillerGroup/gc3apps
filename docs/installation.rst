@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/smaffiol/gc3apps
+    $ git clone git://github.com/BodenmillerGroup/gc3apps
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/smaffiol/gc3apps/tarball/master
+    $ curl  -OL https://github.com/smaffiol/BodenmillerGroup/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/smaffiol/gc3apps
-.. _tarball: https://github.com/smaffiol/gc3apps/tarball/master
+.. _Github repo: https://github.com/BodenmillerGroup/gc3apps
+.. _tarball: https://github.com/smaffiol/BodenmillerGroup/tarball/master
