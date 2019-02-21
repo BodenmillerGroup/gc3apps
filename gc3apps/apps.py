@@ -149,11 +149,15 @@ class RunCellprofiler(Application):
         inputs = dict()
         outputs = []
 
+        self.docker_image = gc3apps.Default.DEFAULT_CELLPROFILER_DOCKER
         cparser = CPparser(batch_file)
         inputs[batch_file] = os.path.basename(batch_file)
+        if extra_args["docker_image"]:
+            self.docker_image = extra_args["docker_image"]
 
         command = gc3apps.Default.CELLPROFILER_DOCKER_COMMAND.format(batch_file="$PWD/{0}".format(inputs[batch_file]),
                                                                      data_mount_point=gc3apps.Default.DEFAULT_BBSERVER_MOUNT_POINT,
+                                                                     docker_image = self.docker_image,
                                                                      start=start_index,
                                                                      end=end_index,
                                                                      output_folder=output_folder,
@@ -187,14 +191,17 @@ class RunCellprofilerGetGroups(Application):
         inputs[os.path.join(whereami,
                             gc3apps.Default.GET_CP_GROUPS_FILE)] = gc3apps.Default.GET_CP_GROUPS_FILE
         
-
         self.json_file = os.path.join(extra_args['output_dir'],"result.json")
         self.batch_file = os.path.join(extra_args['output_dir'], "Batch_data.h5")
+        self.docker_image = gc3apps.Default.DEFAULT_CELLPROFILER_DOCKER
+        if extra_args["docker_image"]:
+            self.docker_image = extra_args["docker_image"]
 
         cmd = gc3apps.Default.GET_CP_GROUPS_CMD.format(output="./output",
                                                        pipeline=inputs[pipeline],
                                                        image_data=image_data_folder,
-                                                       cp_plugins=plugins)
+                                                       cp_plugins=plugins,
+                                                       docker_image=self.docker_image)
 
 	gc3libs.log.debug("In RunCellprofilerGetGroups running {0}.".format(cmd))
 
