@@ -57,11 +57,10 @@ def _get_chunks(lenght, chunk_size):
     Given a lenght, split the range into chunks of chunk_size
     """
 
-    l = range(1,lenght,chunk_size)
-    if (lenght % chunk_size) > 0:
-        l.append(lenght)
-    for i in range(0,len(l)-1):
-        yield(l[i],l[i+1])
+    chunks = range(1,lenght+1,chunk_size)
+    chunks.append(lenght+1)
+    for i in range(0,len(chunks)-1):
+        yield(chunks[i],chunks[i+1]-1)
 
 
 #####################
@@ -185,6 +184,11 @@ class GCellprofilerPipelineScript(SessionBasedScript):
                        dest="plugins", default="$HOME",
                        help="Location of Cellprofiler plugins. Default: '%(default)s'.")
 
+        self.add_param("--docker", metavar="[IMAGE NAME]",
+                       type=str,
+                       dest="docker_image",
+                       help="Docker image that runs the gcp pipeline.")
+
     def parse_args(self):
 	"""
 	Declare command line arguments.
@@ -205,6 +209,8 @@ class GCellprofilerPipelineScript(SessionBasedScript):
         extra_args['output_dir'] = os.path.join(os.path.abspath(self.session.path),
                                                 '.compute',
                                                 extra_args['jobname'])
+        extra_args['docker_image'] = self.params.docker_image
+
         return [GCellprofilerPipeline(self.params.cppipe,
                                       self.params.input_folder,
                                       self.params.output_folder,
