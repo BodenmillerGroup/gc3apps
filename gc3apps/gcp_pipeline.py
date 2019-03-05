@@ -38,8 +38,10 @@ if __name__ == "__main__":
     import gcp_pipeline
     gcp_pipeline.GCellprofilerPipelineScript().run()
 
+import glob
 import os
 import json
+import shutil
 import gc3apps
 import gc3libs
 from gc3libs import Application
@@ -63,6 +65,63 @@ def _get_chunks(lenght, chunk_size):
         yield(chunks[i],chunks[i+1]-1)
 
 
+def _copy_cp_file(path_source, fol_source, fol_target):
+    """
+    Copies a file from a source folder in a target folder, preserving the subfolder
+    structure.
+    If the file exists already, it is not overwritten but a warning is printed.
+    If the file exists already and is a .csv file, it will be appended to the existing .csv
+    without header
+    
+    Input:
+        path_source: the full path to the source file
+        fol_source: the base folder of the source file
+        fol_target: the target folder 
+    Output:
+        True: if copied/appended
+        False: if not copied
+    """
+    CSV_SUFFIX = '.csv'
+    
+    fn_source_rel = os.path.relpath(path_source,fol_source)
+    path_target = os.path.join(fol_target, fn_source_rel)
+    if os.path.exists(path_target):
+        if path_source.endswith(CSV_SUFFIX):
+            with open(path_target, 'ab') as outfile:
+                with open(path_source, 'rb') as infile:
+                    infile.readline()  # Throw away header on all but first file
+                    # Block copy rest of file from input to output without parsing
+                    shutil.copyfileobj(infile, outfile)
+                    print(path_source + " has been appended.")
+            return True
+        else:
+            print('File: ', path_target, 'present in multiple outputs!')
+            return False
+    else:
+        subfol = os.path.dirname(path_target)
+        if not os.path.exists(subfol):
+            # create the subfolder if it does not yet exist
+            os.makedirs(os.path.dirname(path_target))
+        shutil.copy(path_source, path_target)
+        return True
+        
+def _combine_directories(fols_input, fol_out):
+    """
+    Combines a list of cellprofiler ouput directories into one output
+    folder.
+    This .csv files present in multiple output directories are appended
+    to each other, ignoring the header. Other files present in multiple directories
+    are only copied once.
+    Input:
+        fols_input: list of cp ouput folders
+        fol_out: folder to recombine the output folders into
+    """
+    for d_root in fols_input:
+        for dp, dn, filenames in os.walk(d_root):
+            for f in filenames:
+                subfol = os.path.relpath(dp, start=d_root)
+                _copy_cp_file(path_source=os.path.join(dp, f), fol_source=d_root, fol_target=fol_out)
+
 #####################
 # StagedTaskCollection class
 #
@@ -72,6 +131,7 @@ class GCellprofilerPipeline(StagedTaskCollection):
     Staged collection:
     Step1: Generate groups .json file, used to get index size of batch images
     Step2: generate batch and run cellprofiler in batch mode for each batch
+    Step3: combine the output into 1 output folder
     """
     def __init__(self, cppipe, input_folder, output_folder, chunks, plugins, **extra_args):
 
@@ -217,3 +277,10 @@ class GCellprofilerPipelineScript(SessionBasedScript):
                                       self.params.chunks,
                                       self.params.plugins,
                                       **extra_args)]
+
+    def after_main_loop(self):
+        glob_infols = 'output_*'
+        fol_out = self.params.output_folder
+        fol_input = fol_out
+        dirs_input = glob.glob(os.path.join(fol_input, glob_infols))
+        _combine_directories(dirs_input, fol_out)
