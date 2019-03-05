@@ -131,7 +131,6 @@ class GCellprofilerPipeline(StagedTaskCollection):
     Staged collection:
     Step1: Generate groups .json file, used to get index size of batch images
     Step2: generate batch and run cellprofiler in batch mode for each batch
-    Step3: combine the output into 1 output folder
     """
     def __init__(self, cppipe, input_folder, output_folder, chunks, plugins, **extra_args):
 
