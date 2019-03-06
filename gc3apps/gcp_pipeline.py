@@ -52,15 +52,36 @@ from gc3libs.quantity import Memory, kB, MB, MiB, GB, \
 from gc3libs.cmdline import SessionBasedScript, existing_file, \
     positive_int, existing_directory
 
-def _get_chunks(lenght, chunk_size):
+def __group_by_limit(li, limit):
     """
-    Given a lenght, split the range into chunks of chunk_size
+    Helper:
+    Concatenates consecutive sublists of a list
+    until a size limit has been reached
     """
+    if not li:
+        return []
+    out = [[]]
+    for sublist in li:
+        if len(out[-1]) < limit:
+            out[-1].extend(sublist)
+        else:
+            out.append(sublist[:])
 
-    chunks = range(1,lenght+1,chunk_size)
-    chunks.append(lenght+1)
-    for i in range(0,len(chunks)-1):
-        yield(chunks[i],chunks[i+1]-1)
+    # check for the last element length
+    if len(out) > 1 and len(out[-1]) < limit:
+        out[-2].extend(out.pop(-1))
+
+    return out
+
+
+def _get_chunks(data, chunk_size):
+    """
+    Get chunk of images based on the chunk_size
+    """
+    images_list = [element[1] for element in data]
+    chunks_list = __group_by_limit(images_list, chunk_size)
+    for chunk in chunks_list:
+        yield(chunk[0],chunk[-1])
 
 
 #####################
@@ -114,12 +135,11 @@ class GCellprofilerPipeline(StagedTaskCollection):
 
         with open(self.tasks[0].json_file) as json_file:
             data = json.load(json_file)
-            batch_size = len(data)
 
         batch_file = self.tasks[0].batch_file
 
         tasks = []
-        for start,end in _get_chunks(batch_size, self.chunks):
+        for start,end in _get_chunks(data, self.chunks):
             jobname = self.extra["jobname"]
             extra_args = self.extra.copy()
             extra_args['jobname'] = "cp_run_{0}-{1}".format(start,end)
