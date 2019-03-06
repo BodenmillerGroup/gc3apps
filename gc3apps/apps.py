@@ -239,3 +239,62 @@ class RunCellprofilerGetGroups(Application):
         except IOError as ix:
             # Json file not found 
             gc3libs.log.error("Required json file at {0} was not found".format(self.json_file))
+
+
+class RunCellprofilerGetGroupsWithBatchFile(Application):
+    """
+    Run Cellprofiler in batch mode and get images groups information
+    @params: Cellprofiler HD5 batch file
+    @returns: .json file containing image group information
+    """
+
+    application_name = 'runcellprofilerwithbatchfile'
+
+    def __init__(self, batch_file, **extra_args):
+
+        inputs = dict()
+        outputs = []
+
+        self.docker_image = gc3apps.Default.DEFAULT_CELLPROFILER_DOCKER
+        if extra_args["docker_image"]:
+            self.docker_image = extra_args["docker_image"]
+
+
+        command = gc3apps.Default.CELLPROFILER_GETGROUPS_COMMAND.format(batch_file=batch_file,
+                                                                        docker_image=self.docker_image)
+
+	gc3libs.log.debug("In RunCellprofilerGetGroups running {0}.".format(command))
+
+        Application.__init__(
+            self,
+            arguments = command,
+            inputs = inputs,
+            outputs = [gc3apps.Default.CELLPROFILER_GROUPFILE],
+            stdout = gc3apps.Default.CELLPROFILER_GROUPFILE,
+            stderr = "log.err",
+            join=False,
+            executables=[],
+            **extra_args)
+
+    def terminated(self):
+        """
+        Check presence of output log and verify it is
+        a legit .json file
+        Do not trust cellprofiler exit code (exit with 1)
+        """
+
+	gc3libs.log.debug("In RunCellprofilerGetGroups running 'termianted'.")
+
+        try:
+            with open(self.json_file,"r") as fd:
+                try:
+                    data = json.load(fd)
+                    if len(data) > 0:
+                        self.execution.returncode = (0, 0)
+                except ValueError as vx:
+                    # No valid json
+                    gc3libs.log.error("Failed parsing {0}. No valid json.".format(self.json_file))
+                    self.execution.returncode = (0,1)
+        except IOError as ix:
+            # Json file not found
+            gc3libs.log.error("Required json file at {0} was not found".format(self.json_file))
