@@ -69,7 +69,7 @@ def __group_by_limit(li, limit):
 
     # check for the last element length
     if len(out) > 1 and len(out[-1]) < limit:
-        out[-2].extend(out.pop(-1))
+        out[-2].extend(out.pop())
 
     return out
 

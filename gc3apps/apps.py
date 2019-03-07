@@ -286,15 +286,15 @@ class RunCellprofilerGetGroupsWithBatchFile(Application):
 	gc3libs.log.debug("In RunCellprofilerGetGroups running 'termianted'.")
 
         try:
-            with open(self.json_file,"r") as fd:
+            with open(os.path.join(self.output_dir,self.stdout),"r") as fd:
                 try:
                     data = json.load(fd)
                     if len(data) > 0:
                         self.execution.returncode = (0, 0)
                 except ValueError as vx:
                     # No valid json
-                    gc3libs.log.error("Failed parsing {0}. No valid json.".format(self.json_file))
+                    gc3libs.log.error("Failed parsing {0}. No valid json.".format(os.path.join(self.output_dir,self.stdout)))
                     self.execution.returncode = (0,1)
         except IOError as ix:
             # Json file not found
-            gc3libs.log.error("Required json file at {0} was not found".format(self.json_file))
+            gc3libs.log.error("Required json file at {0} was not found".format(os.path.join(self.output_dir,self.stdout)))
