@@ -61,6 +61,8 @@ FILE_FORMAT['sMC'] = ".fcs"
 FILE_FORMAT['IMC'] = ".mcd"
 FNAME_SPLIT_CRITERIA = "_"
 ANALYSIS_TYPES = ['IMC','sMC']
+SAMPLE_ANCHOR = "%(sample_id)"
+
 
 class TP_data():
     """
@@ -126,7 +128,6 @@ class TP_data():
             return metadata_list
         except Exception:
             log.warning("Failed parsing input data {0}. ignoring".format(raw_file))
-            # raise Error("Failed parsing input data {0}. ignoring".format(raw_file))
            
     def _get_abpanel(self, raw_file):
         """
@@ -151,13 +152,14 @@ def is_append(folder_location):
 
 # Operation functions
 
-def create_destination_folder_structure(folder_path, folder_list, append_raw=False):
+def create_destination_folder_structure(folder_path, folder_list, append_raw=False, suffix=None):
     """
     Create folder structure according to passed `folder_list`
     """
     failure = 0
         
     for folder in folder_list:
+        folder = folder.replace ('%(sample_id)', suffix)
         dest = os.path.join(folder_path,
                             folder)
         if os.path.isdir(dest):
@@ -187,13 +189,9 @@ def checkout_git_repo(repo, destination, new_branch_name, remote_branch="master"
     """
     repo = Repo.clone_from(repo,destination)
 
-    for ref in repo.references:
-        if ref.name == remote_branch:
-            log.debug("Checking out remote branch {0}".format(ref.name))
-            ref.checkout()
-    branch = repo.create_head(new_branch_name)
-    repo.head.reference = branch
-    repo.heads[0].checkout()
+    git = repo.git
+    git.checkout(remote_branch)
+    git.checkout('HEAD', b=new_branch_name)
 
 def parse_config_file(config_file):
     """
@@ -295,14 +293,15 @@ def main(location, analysis_type, configuration, dryrun=False):
         create_destination_folder_structure(os.path.join(destination_folder,
                                                          data.folder_path),
                                             raw_subfolders,
-                                            config[analysis_type]['allow_append_raw_data'])
+                                            config[analysis_type]['allow_append_raw_data'],
+                                            suffix=data.sample_id)
 
         if not dryrun:
             log.info("Creating new branch for analysis scripts")
             checkout_git_repo(config[analysis_type]['repo']['source'],
                               os.path.join(destination_folder,
                                            data.folder_path,
-                                           config[analysis_type]['repo']['location']),
+                                           config[analysis_type]['repo']['location'].replace(SAMPLE_ANCHOR,data.sample_id)),
                               "{0}_{1}".format(analysis_type,
                                                data.sample_id),
                               remote_branch=config[analysis_type]['repo']['branch'])
@@ -350,3 +349,4 @@ if __name__ == "__main__":
     assert os.path.isdir(args.folder_location)
 
     sys.exit(main(args.folder_location, args.analysis_type, args.configuration, args.dryrun))
+

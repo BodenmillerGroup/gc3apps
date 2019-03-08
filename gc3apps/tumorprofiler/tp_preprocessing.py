@@ -126,10 +126,9 @@ def parse_config_file(config_file):
         try:
             cfg = yaml.load(fd)
             assert cfg.has_key("experiment"), "Missing 'experiment' section in config file"
-            assert cfg["experiment"].has_key("folder_prefix"), "Missing 'experiment' section in config file"
-            assert cfg["experiment"].has_key("subfolders"), "Missing 'experiment' section in config file"
-            assert cfg["experiment"].has_key("raw_data_immune"), "Missing 'experiment' section in config file"
-            assert cfg["experiment"].has_key("raw_data_tumor"), "Missing 'raw_data_tumor' section in config file"
+            assert cfg["experiment"].has_key("panels"), "Missing 'panels' section in config file"
+            assert cfg["experiment"].has_key("folder_prefix"), "Missing 'folder_prefix' section in config file"
+            assert cfg["experiment"].has_key("subfolders"), "Missing 'subfolders' section in config file"
 
             for key in ANALYSIS_TYPES:
                 assert cfg.has_key(key), "Missing {0} section in config file".format(key)
@@ -157,18 +156,28 @@ def transfer_raw_data(raw_data_location, raw_data_list, destination_folder, raw_
     """
 
     for fraw,metadata in raw_data_list:
-        if metadata[2] == "I":
-            # Immune data
-            destination = os.path.join(destination_folder,
-                                       raw_data_immune,
-                                       fraw)
-        elif metadata[2] == "M":
-            # Tumor data
-            destination = os.path.join(destination_folder,
-                                       raw_data_tumor,
-                                       fraw)
-        else:
-            raise Exception("Wrong panel reference: {0}".format(metadata[2]))
+        assert metadata[2] in cfg["experiment"]["panels"].keys(), \
+            "Panel reference {0}, not in list of valid panels: " \
+            "{1}".format(cfg["experiment"]["panels"].keys())
+
+
+        destination = os.path.join(destination_folder,
+                                   cfg["experiment"]["panels"][metadata[2]],
+                                   fraw)
+
+        # if metadata[2] == "I":
+        #     # Immune data
+        #     destination = os.path.join(destination_folder,
+        #                                raw_data_immune,
+        #                                fraw)
+        # elif metadata[2] == "M":
+        #     # Tumor data
+        #     destination = os.path.join(destination_folder,
+        #                                raw_data_tumor,
+        #                                fraw)
+        # else:
+        #     raise Exception("Wrong panel reference: {0}".format(metadata[2]))
+
         try:
             if not move:
                 os.symlink(os.path.join(raw_data_location,fraw),destination)
@@ -213,9 +222,15 @@ def main(location, analysis_type, configuration, dryrun=False):
                                                                                 analysis_type)
 
     if not are_we_appending:
+        # Create destination folder following
+        # configuration file
+        raw_subfolders = []
+        raw_subfolders.extend(config["experiment"]["subfolders"])
+        raw_subfolders.extend(config["experiment"]["panels"].values())
+
         create_destination_folder_structure(os.path.join(destination_folder,
                                                          data.folder_path),
-                                            config["experiment"]["subfolders"],
+                                            raw_subfolders,
                                             config[analysis_type]['allow_append_raw_data'])
 
         if not dryrun:
