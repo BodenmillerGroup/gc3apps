@@ -7,7 +7,7 @@ import pytest
 
 from click.testing import CliRunner
 
-from gc3apps import gc3apps
+import gc3apps
 from gc3apps import cli
 
 
