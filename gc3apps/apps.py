@@ -239,3 +239,52 @@ class RunCellprofilerGetGroups(Application):
         except IOError as ix:
             # Json file not found 
             gc3libs.log.error("Required json file at {0} was not found".format(self.json_file))
+
+
+
+class RunIlastik(Application):
+    """
+    Run Ilastik in batch mode
+    """
+
+    application_name = 'runilastik'
+
+    def __init__(self, project_file, output_folder, input_files, export_source,
+            export_dtype, output_filename, **extra_args):
+
+        inputs = dict()
+        outputs = []
+
+        self.docker_image = gc3apps.Default.DEFAULT_ILASTIK_DOCKER
+        inputs[project_file] = os.path.basename(project_file)
+
+        if extra_args["docker_image"]:
+            self.docker_image = extra_args["docker_image"]
+
+        if output_filename is None:
+            outtype = filter(str.isalnum, export_source)
+            output_filename =  '{{nickname}}_{outtype}.tiff'.format(
+                    outtype=outtype)
+
+        input_file_string = ' '.join(input_files)
+
+        command = gc3apps.Default.ILASTIK_DOCKER_COMMAND.format(
+                project_file="$PWD/{0}".format(inputs[project_file]),
+                                                                     data_mount_point=gc3apps.Default.DEFAULT_BBSERVER_MOUNT_POINT,
+                                                                     docker_image = self.docker_image,
+                                                                     input_files=input_file_string,
+                                                                     output_folder=output_folder,
+                                                                     export_source=export_source,
+                                                                     export_dtype=export_dtype,
+                                                                     output_filename=output_filename
+                                                                     )
+        Application.__init__(
+            self,
+            arguments = command,
+            inputs = inputs,
+            outputs = [],
+            stdout = 'log',
+            join=True,
+            executables=[],
+             **extra_args)
+         
