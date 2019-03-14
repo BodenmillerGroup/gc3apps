@@ -77,6 +77,40 @@ class NotifyApplication(Application):
             executables=[],
             **extra_args)
 
+
+class QTLApplication(Application):
+    """
+    Run celllineQTL at scale
+    """
+    def __init__(self, phenotypeName, dataDirPath, forests, trees, scores, permutations, threshold, qtl_version, **extra_args):
+
+        inputs = dict()
+        outputs = []
+
+        outputs.append("./output")
+        inputs[dataDirPath] = os.path.basename(dataDirPath)
+
+        cmd = gc3apps.Default.QTL_COMMAND.format(output="./output",
+                                                 data=inputs[dataDirPath],
+                                                 qtl_version=qtl_version,
+                                                 phenotypeName=phenotypeName,
+                                                 trees=trees,
+                                                 forests=forests,
+                                                 scores=scores,
+                                                 permutations=permutations,
+                                                 threshold=threshold)
+
+        Application.__init__(
+            self,
+            arguments = cmd,
+            inputs = inputs,
+            outputs = outputs,
+            stdout = 'log',
+            join=True,
+            executables=[],
+            **extra_args)
+
+        
 class TPPrepareFolders(Application):
     """
     parse metadata and create destination folder accordingly
