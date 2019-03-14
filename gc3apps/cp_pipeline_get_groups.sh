@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #!/bin/bash
+=======
+#!/bin/bash -x
+>>>>>>> sergio: wrapper Cellprofiler script to get generate Batch file and get groups
 
 #   Copyright (C) 2018, 2019 - bodenmillerlab, University of Zurich
 #
@@ -27,7 +31,10 @@ pipeline=`realpath ./pipeline.cppipe`
 images=`realpath ./images`
 plugins=`realpath ./plugins`
 mode_list="get_groups run"
+<<<<<<< HEAD
 dockerimage="bblab/cellprofiler:3.1.8"
+=======
+>>>>>>> sergio: wrapper Cellprofiler script to get generate Batch file and get groups
 
 ## helper functions
 
@@ -39,6 +46,7 @@ function die () {
     exit $rc
 }
 
+<<<<<<< HEAD
 function check_mount () {
     sleep 10
     mountpoint -q $1
@@ -48,6 +56,8 @@ function check_mount () {
     fi
 }
 
+=======
+>>>>>>> sergio: wrapper Cellprofiler script to get generate Batch file and get groups
 function check_mode () {
     if [[ $mode_list =~ (^|[[:space:]])$1($|[[:space:]]) ]]; then
 	return 0
@@ -59,7 +69,11 @@ function check_mode () {
 
 function generate_file_list () {
     echo -n "Generating filelist $2 ... "
+<<<<<<< HEAD
     find $1 -type f -print > $2
+=======
+    find $1 -type f -print >> $2
+>>>>>>> sergio: wrapper Cellprofiler script to get generate Batch file and get groups
     if [ $? -ne 0 ]; then
 	echo "[failed]"
 	echo "DBG: Failed generating filelist '$2' from '$1'"
@@ -93,11 +107,15 @@ Options:
   -p		Location of .cppipe file
   -i		Images location
   -w		Additional CellProfiler Plugins folder
+<<<<<<< HEAD
   -d		Docker image
+=======
+>>>>>>> sergio: wrapper Cellprofiler script to get generate Batch file and get groups
 __EOF__
 }
 
 
+<<<<<<< HEAD
 ###############################
 # main
 #
@@ -111,6 +129,12 @@ check_mount /mnt/bbvolume
 
 short_opts='hvo:p:i:w:d:'
 long_opts='help,verbose,output,pipeline,images,plugins,docker'
+=======
+## parse command-line
+
+short_opts='hvo:p:i:w:'
+long_opts='help,verbose,output,pipeline,images,plugins'
+>>>>>>> sergio: wrapper Cellprofiler script to get generate Batch file and get groups
 
 getopt -T > /dev/null
 rc=$?
@@ -139,13 +163,22 @@ while [ $# -gt 0 ]; do
 	--pipeline|-p) pipeline=`realpath $2`; shift ;;
 	--images|-i)   images=`realpath $2`; shift ;;
 	--plugins|-w)  plugins=`realpath $2`; shift ;;
+<<<<<<< HEAD
 	--docker|-d)   dockerimage=$2; shift ;;	
+=======
+>>>>>>> sergio: wrapper Cellprofiler script to get generate Batch file and get groups
         --)            shift; break ;;
     esac
     shift
 done
 
 
+<<<<<<< HEAD
+=======
+## sanity checks
+
+
+>>>>>>> sergio: wrapper Cellprofiler script to get generate Batch file and get groups
 ## main
 echo "=== ${me}: Starting at `date '+%Y-%m-%d %H:%M:%S'`"
 
@@ -156,7 +189,11 @@ fi
 # create filelist.txt
 generate_file_list $images $output/filelist.txt
 
+<<<<<<< HEAD
 cmd="sudo docker run -v ${output}:/output -v ${pipeline}:/tmp/pipeline.cppipe -v ${output}/filelist.txt:/tmp/filelist.txt -v ${plugins}:${plugins}:ro -v ${images}:${images}:ro ${dockerimage} -c -r --file-list=/tmp/filelist.txt --plugins-directory ${plugins} -p /tmp/pipeline.cppipe -o /output --done-file=/output/done.txt"
+=======
+cmd="sudo docker run -v ${output}:/output -v ${pipeline}:/tmp/pipeline.cppipe -v ${output}/filelist.txt:/tmp/filelist.txt -v ${plugins}:${plugins}:ro -v ${images}:${images}:ro bblab/cellprofiler:3.1.8 cellprofiler -c -r --file-list=/tmp/filelist.txt --plugins-directory ${plugins} -p /tmp/pipeline.cppipe -o /output --done-file=/output/done.txt"
+>>>>>>> sergio: wrapper Cellprofiler script to get generate Batch file and get groups
 echo -n "Generating CellProfiler Batch ... "
 $cmd 1>${output}/log 2>${output}/err
 
@@ -167,7 +204,11 @@ fi
 echo ["ok"]
 
 echo -n "Generating CellProfiler groups ... "
+<<<<<<< HEAD
 cmd="sudo docker run -v ${output}:/output ${dockerimage} -c --print-groups=/output/Batch_data.h5"
+=======
+cmd="sudo docker run -v ${output}/Batch_data.h5:/tmp/Batch_data.h5 bblab/cellprofiler:3.1.8 cellprofiler -c --print-groups=/tmp/Batch_data.h5"
+>>>>>>> sergio: wrapper Cellprofiler script to get generate Batch file and get groups
 $cmd 1>${output}/result.json 2>>${output}/err
 
 if ! [ -s ${output}/result.json ]; then
