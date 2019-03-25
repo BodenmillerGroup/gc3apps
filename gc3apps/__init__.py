@@ -29,6 +29,18 @@ class Default(object):
     GET_CP_GROUPS_CMD = "./" + GET_CP_GROUPS_FILE + " -o {output} -p {pipeline} -i {image_data} -w {cp_plugins} -d {docker_image}"
     CELLPROFILER_DOCKER_COMMAND = "sudo docker run -v {batch_file}:{batch_file} {CP_MOUNT_POINT} {docker_image} -c -r -p {batch_file} -f {start} -l {end} --do-not-write-schema --plugins-directory={plugins} -o /output --done-file=/output/"+CELLPROFILER_DONEFILE
 
+    DEFAULT_ILASTIK_DOCKER = "ilastik/ilastik-from-binary:1.3.2b3"
+    ILASTIK_DOCKER_COMMAND = 'sudo docker run -v {project_file}:{project_file} -v {data_mount_point}:{data_mount_point} -v {output_folder}:/output ' \
+            '{docker_image} ' \
+            './run_ilastik.sh ' \
+            '--headless --project=/{project_file} ' \
+            '--output_format=tiff '\
+            '--output_filename_format=/output/{output_filename} '\
+            '--export_source {export_source} '\
+            '--export_dtype {export_dtype} ' \
+            '--pipeline_result_drange="(0.0, 1.0)" '\
+            '{input_files}'
+
 # Utilities
 
 def get_analysis_type(location):

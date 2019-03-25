@@ -73,7 +73,7 @@ class GQTLScript(SessionBasedScript):
             application = Application,
             stats_only_for = Application,
             )
-
+        
     def setup_options(self):
         self.add_param("-d", "--data", metavar="DIRECTORY",
                        type=existing_directory,

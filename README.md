@@ -17,12 +17,10 @@ Repository of all GC3Pie applications and utilities for bblab
 	* Activate the virtualenv and generate a gc3pie.conf file
 	```
 	$ source ~/gc3pie/bin/activate
-	$ gservers # this will generate a config file ~/.gc3/gc3pie.conf```
+	$ gservers # this will generate a config file ~/.gc3/gc3pie.conf
+        ```
 
-	* Install additional python packages
-	```$ source ~/gc3pie/bin/activate && pip install -r requirements.txt```
-
-	#### Make sure debian requied packages are installed
+	#### Make sure debian required packages are installed
 	```
 	$ sudo apt-get update && sudo apt-get install -y
 	- libffi-dev
@@ -31,12 +29,16 @@ Repository of all GC3Pie applications and utilities for bblab
 	```
 
 	### Install gcp pipeline
+        * Clone the gc3apps repo
 	```$ cd ~ && git clone https://github.com/BodenmillerGroup/gc3apps.git```
+
+	* Install additional python packages within your virtualenv
+	```$ source ~/gc3pie/bin/activate && cd ~/gc3apps/gc3apps && pip install -r requirements.txt```
 
 	## Run gcp pipeline
 
 	* configure your gc3pie.conf file
-	* identify yourself with your cloud provider
+	* identify yourself with your cloud provider: e.g ```source /path/to/OpenstackRC```
 	* activate your virtualenv
 	* export the gc3apps directory to the pythonpath: e.g. ```export PYTHONPATH=~/gc3apps/gc3apps:~/gc3apps:$PYTHONPATH```
 
@@ -52,4 +54,6 @@ Repository of all GC3Pie applications and utilities for bblab
 	### Common used options 
 
         * Parallel processing
-        To parallelize the gcp pipeline execution, for both "cppipe" and "batch" file modes, use the ```-K integer``` option. You can add this option to one of the commands in the Example section.  
+        To parallelize the gcp pipeline execution for both cases, i.e. "cppipe" and "batch" file modes, use the ```-K n``` option, where `n` is an integer that indicates the images batch size. You can add this option to one of the commands in the Example section.
+        * Docker image
+        By default gcp pipelone use the bblab/cellprofiler:3.1.8 docker image to process the data. You can pass a custom made image to replace the default one using the ```--docker``` option.

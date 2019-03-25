@@ -36,7 +36,7 @@ import os
 import json
 import gc3apps
 import gc3libs
-from gc3apps.h5parse import CPparser
+from gc3apps.utils.h5parse import CPparser
 from gc3libs import Application
 from gc3libs.quantity import Memory, \
     kB, MB, MiB, GB, Duration, hours,\
@@ -47,6 +47,8 @@ from gc3libs.quantity import Memory, \
 TP_PREPROCESSING = "tp_preprocessing.py"
 TP_IMC_STAGE1 = "processing_imc.py"
 TP_IMC_STAGE1_BASH = "tp_imc_pre.sh"
+
+remote_output = "$PWD/output"
 
 #####################
 # Utilities
@@ -83,15 +85,15 @@ class QTLApplication(Application):
     Run celllineQTL at scale
     """
     def __init__(self, phenotypeName, dataDirPath, forests, trees, scores, permutations, threshold, qtl_version, **extra_args):
-
+        
         inputs = dict()
         outputs = []
 
-        outputs.append("./output")
+        output.append(inputs[dataDirPath])
         inputs[dataDirPath] = os.path.basename(dataDirPath)
 
-        cmd = gc3apps.Default.QTL_COMMAND.format(output="./output",
-                                                 data=inputs[dataDirPath],
+        cmd = gc3apps.Default.QTL_COMMAND.format(output="$PWD/{0}".format(inputs[dataDirPath]),
+                                                 data="$PWD/{0}".format(inputs[dataDirPath]),
                                                  qtl_version=qtl_version,
                                                  phenotypeName=phenotypeName,
                                                  trees=trees,
@@ -334,3 +336,51 @@ class RunCellprofilerGetGroupsWithBatchFile(Application):
         except IOError as ix:
             # Json file not found
             gc3libs.log.error("Required json file at {0} was not found".format(os.path.join(self.output_dir,self.stdout)))
+
+class RunIlastik(Application):
+    """
+    Run Ilastik in batch mode
+    """
+
+    application_name = 'runilastik'
+
+    def __init__(self, project_file, input_files, output_folder, export_source,
+            export_dtype, output_filename, **extra_args):
+
+        inputs = dict()
+        outputs = []
+
+        self.docker_image = gc3apps.Default.DEFAULT_ILASTIK_DOCKER
+        inputs[project_file] = os.path.basename(project_file)
+
+        if extra_args["docker_image"]:
+            self.docker_image = extra_args["docker_image"]
+
+        if output_filename is None:
+            outtype = filter(str.isalnum, export_source)
+            output_filename =  '{{nickname}}_{outtype}.tiff'.format(
+                    outtype=outtype)
+
+        input_file_string = ' '.join(input_files)
+
+        command = gc3apps.Default.ILASTIK_DOCKER_COMMAND.format(
+            project_file="$PWD/{0}".format(inputs[project_file]),
+            data_mount_point=gc3apps.Default.DEFAULT_BBSERVER_MOUNT_POINT,
+            docker_image = self.docker_image,
+            input_files=input_file_string,
+            output_folder=output_folder,
+            export_source=export_source,
+            export_dtype=export_dtype,
+            output_filename=output_filename
+        )
+
+        Application.__init__(
+            self,
+            arguments = command,
+            inputs = inputs,
+            outputs = [],
+            stdout = 'log',
+            join=True,
+            executables=[],
+             **extra_args)
+         
