@@ -82,24 +82,21 @@ class QTLApplication(Application):
     """
     Run celllineQTL at scale
     """
-    def __init__(self, phenotypeName, dataDirPath, forests, trees, scores, permutations, threshold, qtl_version, **extra_args):
-
-        inputs = dict()
+    def __init__(self, phenotype, path, batches, permutations, imputations, trees, mafthres, last, version, **kwargs):
+        inputs = {}
         outputs = []
-
-        outputs.append("./output")
-        inputs[dataDirPath] = os.path.basename(dataDirPath)
-
-        cmd = gc3apps.Default.QTL_COMMAND.format(output="./output",
-                                                 data=inputs[dataDirPath],
-                                                 qtl_version=qtl_version,
-                                                 phenotypeName=phenotypeName,
-                                                 trees=trees,
-                                                 forests=forests,
-                                                 scores=scores,
+        inputs[path] = os.path.basename(path)
+        outputs.append(inputs[path])
+        cmd = gc3apps.Default.QTL_COMMAND.format(version=version,
+                                                 phenotype=phenotype,
+                                                 data="$PWD/{0}".format(inputs[path]),
+                                                 output="$PWD/{0}".format(inputs[path]),
+                                                 batches=batches,
                                                  permutations=permutations,
-                                                 threshold=threshold)
-
+                                                 imputations=imputations,
+                                                 trees=trees,
+                                                 mafthres=mafthres,
+                                                 last=last)
         Application.__init__(
             self,
             arguments = cmd,
@@ -108,7 +105,7 @@ class QTLApplication(Application):
             stdout = 'log',
             join=True,
             executables=[],
-            **extra_args)
+            **kwargs)
 
         
 class TPPrepareFolders(Application):

@@ -78,67 +78,67 @@ class GQTLScript(SessionBasedScript):
         self.add_param("-d", "--data", metavar="DIRECTORY",
                        type=existing_directory,
                        dest="data", default=os.getenv("PWD"),
-                       help="Location of input data." \
+                       help="Location of input/output data. " \
                        "Default: '%(default)s'.")
 
-        self.add_param("-f", "--forests", metavar="NUM",
+        self.add_param("-b", "--batches", metavar="NUM",
                        type=positive_int,
-                       dest="forests", default=10,
-                       help="number of independent imputations." \
-                       "Default: '%(default)s'.")
-
-        self.add_param("-t", "--trees", metavar="NUM",
-                       type=positive_int,
-                       dest="trees", default=1000,
-                       help="total number of trees numForests X numTrees. " \
-                       "Default: '%(default)s'.")
-
-        self.add_param("-S", "--scores", metavar="NUM",
-                       type=positive_int,
-                       dest="scores", default=1000,
-                       help="number of permutation batches written to individual files." \
+                       dest="batches", default=1000,
+                       help="Number of permutation batches written to individual files. " \
                        "Default: '%(default)s'.")
 
         self.add_param("-p", "--permutations", metavar="NUM",
                        type=positive_int,
                        dest="permutations", default=100,
-                       help="total number of permutations: numPermutedScoresFiles times numPermutations." \
+                       help="Number of permutations per batch (file). " \
                        "Default: '%(default)s'.")
 
-        self.add_param("-t", "--threshold", metavar="NUM",
+        self.add_param("-i", "--imputations", metavar="NUM",
+                       type=positive_int,
+                       dest="imputations", default=10,
+                       help="Number of imputations (forests) per permutation. " \
+                       "Default: '%(default)s'.")
+
+        self.add_param("-t", "--trees", metavar="NUM",
+                       type=positive_int,
+                       dest="trees", default=1000,
+                       help="Number of trees per imputation (forest). " \
+                       "Default: '%(default)s'.")
+
+        self.add_param("--mafthres", metavar="NUM",
                        type=float,
-                       dest="threshold", default=0.9,
-                       help="only consider markers with less than n strains for the major allele." \
+                       dest="mafthres", default=0.9,
+                       help="Major allele frequency (MAF) theshold. " \
                        "Default: '%(default)s'.")
 
-        self.add_param("-q", "--qtl_version", metavar="VERSION",
+        self.add_param("--last", metavar="NUM",
+                       type=nonnegative_int,
+                       dest="last", default=0,
+                       help="Last permutation batch number. " \
+                       "Default: '%(default)s'.")
+
+        self.add_param("--version", metavar="VERSION",
                        type=str,
-                       dest="qtl_version", default="latest",
-                       help="What QTL version should be used." \
+                       dest="version", default="1.0.6",
+                       help="Docker version to be used. " \
                        "Default: '%(default)s'.")
 
         
     def new_tasks(self, extra):
-        """
-        """
         tasks = []
-
-        for phenotypeName in self.params.args:
-        
+        for phenotype in self.params.args:
             extra_args = extra.copy()
-            extra_args['jobname'] = phenotypeName
-
-            extra_args['output_dir'] = os.path.join(os.path.abspath(self.session.path),
-                                                    '.compute',
-                                                    extra_args['jobname'])
-            tasks.append(QTLApplication(phenotypeName,
+            extra_args['jobname'] = phenotype
+            extra_args['output_dir'] = self.params.output.replace('NAME', phenotype)
+            tasks.append(QTLApplication(phenotype,
                                         os.path.abspath(self.params.data),
-                                        self.params.forests,
-                                        self.params.trees,
-                                        self.params.scores,
+                                        self.params.batches,
                                         self.params.permutations,
-                                        self.params.threshold,
-                                        self.params.qtl_version,
+                                        self.params.imputations,
+                                        self.params.trees,
+                                        self.params.mafthres,
+                                        self.params.last,
+                                        self.params.version,
                                         **extra_args))
         return tasks
 
