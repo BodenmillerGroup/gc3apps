@@ -47,7 +47,7 @@ from gc3apps.apps import QTLApplication
 from gc3libs.quantity import Memory, kB, MB, MiB, GB, \
     Duration, hours, minutes, seconds
 from gc3libs.cmdline import SessionBasedScript, existing_file, \
-    positive_int, existing_directory
+    positive_int, existing_directory, nonnegative_int
 
 class GQTLScript(SessionBasedScript):
     """
@@ -119,7 +119,7 @@ class GQTLScript(SessionBasedScript):
 
         self.add_param("--version", metavar="VERSION",
                        type=str,
-                       dest="version", default="1.0.6",
+                       dest="version", default="1.1.0",
                        help="Docker version to be used. " \
                        "Default: '%(default)s'.")
 
@@ -129,7 +129,7 @@ class GQTLScript(SessionBasedScript):
         for phenotype in self.params.args:
             extra_args = extra.copy()
             extra_args['jobname'] = phenotype
-            extra_args['output_dir'] = self.params.output.replace('NAME', phenotype)
+            extra_args['output_dir'] = os.path.abspath(self.params.output.replace('NAME', phenotype))
             tasks.append(QTLApplication(phenotype,
                                         os.path.abspath(self.params.data),
                                         self.params.batches,

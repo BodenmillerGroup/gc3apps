@@ -17,7 +17,7 @@ class Default(object):
     """
     DEFAULT_BBSERVER_MOUNT_POINT = "/mnt/bbvolume"
     DEFAULT_FILE_CHECK_MARKER = "done.txt"
-    QTL_COMMAND = "sudo docker run -v {data}:/data -v {output}:/output bblab/qtl:{version} {phenotype} /data /output -b {batches} -p {permutations} -i {imputations} -t {trees} -m {mafthres} -l {last}"
+    QTL_COMMAND = "sudo docker run -v {data}:/data bblab/qtl:{version} {phenotype} /data /data/results -b {batches} -p {permutations} -i {imputations} -t {trees} -m {mafthres} -l {last}"
     CELLPROFILER_DONEFILE = "cp.done"
     CELLPROFILER_GROUPFILE = "cpgroups.json"
     DEFAULT_CELLPROFILER_DOCKER = "bblab/cellprofiler:3.1.8"

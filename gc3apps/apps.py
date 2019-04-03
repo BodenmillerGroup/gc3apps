@@ -83,14 +83,11 @@ class QTLApplication(Application):
     Run celllineQTL at scale
     """
     def __init__(self, phenotype, path, batches, permutations, imputations, trees, mafthres, last, version, **kwargs):
-        inputs = {}
-        outputs = []
-        inputs[path] = os.path.basename(path)
-        outputs.append(inputs[path])
+        inputs = [(path, 'data'), ]
+        outputs = ['data/results']
         cmd = gc3apps.Default.QTL_COMMAND.format(version=version,
                                                  phenotype=phenotype,
-                                                 data="$PWD/{0}".format(inputs[path]),
-                                                 output="$PWD/{0}".format(inputs[path]),
+                                                 data="$PWD/data",
                                                  batches=batches,
                                                  permutations=permutations,
                                                  imputations=imputations,
