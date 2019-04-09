@@ -193,6 +193,7 @@ class RunCellprofilerGetGroups(Application):
 
         inputs[pipeline] = os.path.basename(pipeline)
         inputs[os.path.join(whereami,
+                            "etc",
                             gc3apps.Default.GET_CP_GROUPS_FILE)] = gc3apps.Default.GET_CP_GROUPS_FILE
 
         self.json_file = os.path.join(extra_args['output_dir'],"result.json")
@@ -262,7 +263,6 @@ class RunCellprofilerGetGroupsWithBatchFile(Application):
         self.docker_image = gc3apps.Default.DEFAULT_CELLPROFILER_DOCKER
         if extra_args["docker_image"]:
             self.docker_image = extra_args["docker_image"]
-
 
         command = gc3apps.Default.CELLPROFILER_GETGROUPS_COMMAND.format(batch_file=batch_file,
                                                                         docker_image=self.docker_image)
