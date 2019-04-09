@@ -17,6 +17,7 @@ class Default(object):
     """
     DEFAULT_BBSERVER_MOUNT_POINT = "/mnt/bbvolume"
     DEFAULT_FILE_CHECK_MARKER = "done.txt"
+    QTL_COMMAND = "docker run -v {data}:/data -v {output}:/output bblab/qtl:{qtl_version} {phenotypeName} /data /output -f {forests} -t {trees} -s {scores} -p {permutations} -m {threshold}"
     CELLPROFILER_DONEFILE = "cp.done"
     CELLPROFILER_GROUPFILE = "cpgroups.json"
     DEFAULT_CELLPROFILER_DOCKER = "bblab/cellprofiler:3.1.8"
@@ -26,6 +27,7 @@ class Default(object):
 
     GET_CP_GROUPS_FILE = "cp_pipeline_get_groups.sh"
     GET_CP_GROUPS_CMD = "./" + GET_CP_GROUPS_FILE + " -o {output} -p {pipeline} -i {image_data} -w {cp_plugins} -d {docker_image}"
+    CELLPROFILER_DOCKER_COMMAND = "sudo docker run -v {batch_file}:{batch_file} {CP_MOUNT_POINT} {docker_image} -c -r -p {batch_file} -f {start} -l {end} --do-not-write-schema --plugins-directory={plugins} -o /output --done-file=/output/"+CELLPROFILER_DONEFILE
 
 # Utilities
 

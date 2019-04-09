@@ -77,6 +77,40 @@ class NotifyApplication(Application):
             executables=[],
             **extra_args)
 
+
+class QTLApplication(Application):
+    """
+    Run celllineQTL at scale
+    """
+    def __init__(self, phenotypeName, dataDirPath, forests, trees, scores, permutations, threshold, qtl_version, **extra_args):
+
+        inputs = dict()
+        outputs = []
+
+        outputs.append("./output")
+        inputs[dataDirPath] = os.path.basename(dataDirPath)
+
+        cmd = gc3apps.Default.QTL_COMMAND.format(output="./output",
+                                                 data=inputs[dataDirPath],
+                                                 qtl_version=qtl_version,
+                                                 phenotypeName=phenotypeName,
+                                                 trees=trees,
+                                                 forests=forests,
+                                                 scores=scores,
+                                                 permutations=permutations,
+                                                 threshold=threshold)
+
+        Application.__init__(
+            self,
+            arguments = cmd,
+            inputs = inputs,
+            outputs = outputs,
+            stdout = 'log',
+            join=True,
+            executables=[],
+            **extra_args)
+
+        
 class TPPrepareFolders(Application):
     """
     parse metadata and create destination folder accordingly
@@ -161,7 +195,8 @@ class RunCellprofiler(Application):
                                                                      start=start_index,
                                                                      end=end_index,
                                                                      output_folder=output_folder,
-                                                                     plugins=cp_plugins)
+                                                                     plugins=cp_plugins,
+                                                                     MOUNT_POINT=mount_point)
 
         Application.__init__(
             self,
@@ -253,7 +288,7 @@ class RunCellprofilerGetGroupsWithBatchFile(Application):
     def __init__(self, batch_file, **extra_args):
 
         inputs = dict()
-        outputs = []
+        outputs = ["./output/"]
 
         self.docker_image = gc3apps.Default.DEFAULT_CELLPROFILER_DOCKER
         if extra_args["docker_image"]:
@@ -263,18 +298,19 @@ class RunCellprofilerGetGroupsWithBatchFile(Application):
         command = gc3apps.Default.CELLPROFILER_GETGROUPS_COMMAND.format(batch_file=batch_file,
                                                                         docker_image=self.docker_image)
 
-	gc3libs.log.debug("In RunCellprofilerGetGroups running {0}.".format(command))
+	gc3libs.log.debug("In RunCellprofilerGetGroups running {0}.".format(cmd))
 
         Application.__init__(
             self,
-            arguments = command,
+            arguments = cmd,
             inputs = inputs,
-            outputs = [gc3apps.Default.CELLPROFILER_GROUPFILE],
-            stdout = gc3apps.Default.CELLPROFILER_GROUPFILE,
+            outputs = outputs,
+            stdout = "log.out",
             stderr = "log.err",
             join=False,
-            executables=[],
+            executables=["./{0}".format(gc3apps.Default.GET_CP_GROUPS_FILE)],
             **extra_args)
+                                                                            
 
     def terminated(self):
         """
