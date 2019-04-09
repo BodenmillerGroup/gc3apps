@@ -73,7 +73,7 @@ class GQTLScript(SessionBasedScript):
             application = Application,
             stats_only_for = Application,
             )
-
+        
     def setup_options(self):
         self.add_param("-d", "--data", metavar="DIRECTORY",
                        type=existing_directory,
@@ -128,9 +128,8 @@ class GQTLScript(SessionBasedScript):
             extra_args = extra.copy()
             extra_args['jobname'] = phenotypeName
 
-            extra_args['output_dir'] = os.path.join(os.path.abspath(self.session.path),
-                                                    '.compute',
-                                                    extra_args['jobname'])
+            extra_args['output_dir'] = self.params.output.replace('NAME',
+                                                                  extra_args['jobname'])
             tasks.append(QTLApplication(phenotypeName,
                                         os.path.abspath(self.params.data),
                                         self.params.forests,

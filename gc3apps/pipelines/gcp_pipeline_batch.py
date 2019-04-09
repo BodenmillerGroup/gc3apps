@@ -43,7 +43,7 @@ import json
 import gc3apps
 import gc3libs
 from gc3libs import Application
-from gc3apps.apps import RunCellprofiler, \
+from gc3apps import RunCellprofiler, \
     RunCellprofilerGetGroupsWithBatchFile
 from gc3libs.workflow import StagedTaskCollection, \
     ParallelTaskCollection, SequentialTaskCollection

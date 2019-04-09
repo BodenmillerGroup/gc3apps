@@ -42,8 +42,9 @@ import os
 import json
 import gc3apps
 import gc3libs
+import gc3apps.utils
 from gc3libs import Application
-from gc3apps.apps import RunCellprofiler, \
+from gc3apps import RunCellprofiler, \
     RunCellprofilerGetGroups
 from gc3libs.workflow import StagedTaskCollection, \
     ParallelTaskCollection, SequentialTaskCollection
@@ -51,6 +52,38 @@ from gc3libs.quantity import Memory, kB, MB, MiB, GB, \
     Duration, hours, minutes, seconds
 from gc3libs.cmdline import SessionBasedScript, existing_file, \
     positive_int, existing_directory
+
+#####################
+# Utilities
+#
+
+def __combine_cp_directory(source, destination):
+    """
+    Copies a file from a source folder in a target folder, preserving the subfolder
+    structure.
+    If the file exists already, it is not overwritten but a warning is printed.
+    If the file exists already and is a .csv file, it will be appended to the existing .csv
+    without header
+
+    Input:
+        path_source: the full path to the source file
+        fol_source: the base folder of the source file
+        fol_target: the target folder
+    Output:
+        True: if copied/appended
+        False: if not copied
+    """
+    # Copy all source data
+    gc3libs.utils.copytree(source, destination, overwrite=False)
+
+    result_list = []
+    frame = pd.DataFrame()
+
+    # search for .csv files to merge
+    for csv_data in self.csv_results:
+        csv_file = os.path.join(destination, csv_data)
+        data = pd.read_csv(csv_data)
+        data.to_csv(csv_file, mode='ab')
 
 def __group_by_limit(li, limit):
     """
@@ -72,7 +105,6 @@ def __group_by_limit(li, limit):
         out[-2].extend(out.pop())
 
     return out
-
 
 def _get_chunks(data, chunk_size):
     """
@@ -158,6 +190,15 @@ class GCellprofilerPipeline(StagedTaskCollection):
                                          **extra_args))
         return ParallelTaskCollection(tasks)
 
+    def stage2(self):
+        """
+        Take all results from stage1 that completed successfully,
+        move them to `self.output_folder`
+        merge .csv files into one in case
+        """
+        for task in self.tasks[1]:
+            if isinstance(task, RunCellprofiler) and task.execution.returncode == 0:
+                __combine_cp_directory(task.output_folder,self.output_folder)
 
 class GCellprofilerPipelineScript(SessionBasedScript):
     """

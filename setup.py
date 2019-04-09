@@ -11,7 +11,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=6.0', ]
+requirements = ['Click>=6.0', 'h5py' ]
 
 setup_requirements = ['pytest-runner', ]
 
@@ -46,6 +46,11 @@ setup(
     keywords='gc3apps',
     name='gc3apps',
     packages=find_packages(include=['gc3apps']),
+    package_data={
+        'gc3apps': [
+            'etc/*',
+            ],
+    },
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
