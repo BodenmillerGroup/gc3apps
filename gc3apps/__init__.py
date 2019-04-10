@@ -37,7 +37,7 @@ class Default(object):
 
     GET_CP_GROUPS_FILE = "cp_pipeline_get_groups.sh"
     GET_CP_GROUPS_CMD = "./" + GET_CP_GROUPS_FILE + " -o {output} -p {pipeline} -i {image_data} -w {cp_plugins} -d {docker_image}"
-    CELLPROFILER_DOCKER_COMMAND = "sudo docker run -v {batch_file}:{batch_file} {CP_MOUNT_POINT} {docker_image} -c -r -p {batch_file} -f {start} -l {end} --do-not-write-schema --plugins-directory={plugins} -o /output --done-file=/output/"+CELLPROFILER_DONEFILE
+    #CELLPROFILER_DOCKER_COMMAND = "sudo docker run -v {batch_file}:{batch_file} {CP_MOUNT_POINT} {docker_image} -c -r -p {batch_file} -f {start} -l {end} --do-not-write-schema --plugins-directory={plugins} -o /output --done-file=/output/"+CELLPROFILER_DONEFILE
 
     DEFAULT_ILASTIK_DOCKER = "ilastik/ilastik-from-binary:1.3.2b3"
     ILASTIK_DOCKER_COMMAND = 'sudo docker run -v {project_file}:{project_file} -v {data_mount_point}:{data_mount_point} -v {output_folder}:/output ' \
@@ -157,8 +157,7 @@ class RunCellprofiler(Application):
                                                                      start=start_index,
                                                                      end=end_index,
                                                                      output_folder=output_folder,
-                                                                     plugins=cp_plugins,
-                                                                     MOUNT_POINT=mount_point)
+                                                                     plugins=cp_plugins)
 
         Application.__init__(
             self,
@@ -175,7 +174,7 @@ class RunCellprofiler(Application):
         Check if results have been generated
         create list of .csv files in case
         """
-        self.csv_results = [data for data in os.listdir(self.output_folder) if data.endwith(gc3apps.Default.CSV_SUFFIX)]
+        self.csv_results = [data for data in os.listdir(self.output_folder) if data.endswith(gc3apps.Default.CSV_SUFFIX)]
 
 class RunCellprofilerGetGroups(Application):
     """
