@@ -39,7 +39,10 @@ if __name__ == "__main__":
     gcp_pipeline.GCellprofilerPipelineScript().run()
 
 import os
+import shutil
 import json
+import glob
+import pandas as pd
 import gc3apps
 import gc3libs
 import gc3apps.utils
@@ -57,33 +60,50 @@ from gc3libs.cmdline import SessionBasedScript, existing_file, \
 # Utilities
 #
 
-def __combine_cp_directory(source, destination):
+def __csv_handler(source, destination):
     """
-    Copies a file from a source folder in a target folder, preserving the subfolder
+    Checks for presence of csv files in the source dir.
+    If found:
+        - Copies/appends them to the destination dir
+    Input:
+        source: full path to the source dir
+        destination: full path to the destination dir
+    Output:
+        True: if csv files are copied/appended
+        False: if csv files not found
+    """
+    # Get all csv files in the source NOT recursively
+    csv_files = glob.glob(os.path.join(source,'*.csv'))
+
+    if csv_files:
+        gc3libs.log.debug("csv files found at '{0}'".format(source))
+        for csv_file_source in csv_files:
+            csv_file_dest = os.path.join(destination, os.path.basename(csv_file_source))
+            if not os.path.exists(csv_file_dest):
+                # copy source file to destination
+                gc3libs.log.debug("Copying '{0}' to '{1}'".format(csv_file_source, csv_file_dest))
+                shutil.copy2(csv_file_source, csv_file_dest)
+            else:
+                # append source file to dest file
+                data = pd.read_csv(csv_file_source)
+                gc3libs.log.debug("Appending content of '{0}' to '{1}'".format(csv_file_source, csv_file_dest))
+                with open(csv_file_dest, 'a') as f:
+                    data.to_csv(csv_file_dest, mode='a', header=f.tell()==0)
+        return True
+    return False
+
+
+def _combine_cp_directory(source, destination):
+    """
+    Copies files from a source folder to destination folder, preserving the subfolder
     structure.
     If the file exists already, it is not overwritten but a warning is printed.
-    If the file exists already and is a .csv file, it will be appended to the existing .csv
-    without header
-
-    Input:
-        path_source: the full path to the source file
-        fol_source: the base folder of the source file
-        fol_target: the target folder
-    Output:
-        True: if copied/appended
-        False: if not copied
     """
-    # Copy all source data
+    # check for csv files
+    __csv_handler(source, destination)
+    # Copy all data from source to destination
     gc3libs.utils.copytree(source, destination, overwrite=False)
-
-    result_list = []
-    frame = pd.DataFrame()
-
-    # search for .csv files to merge
-    for csv_data in self.csv_results:
-        csv_file = os.path.join(destination, csv_data)
-        data = pd.read_csv(csv_data)
-        data.to_csv(csv_file, mode='ab')
+    #shutil.rmtree(source)
 
 def __group_by_limit(li, limit):
     """
@@ -136,7 +156,7 @@ class GCellprofilerPipeline(StagedTaskCollection):
         self.extra = extra_args
 
         StagedTaskCollection.__init__(self)
-        
+
     def stage0(self):
         """
         Step 0: Generate groups .json file, used to get index size of batch images
@@ -163,7 +183,7 @@ class GCellprofilerPipeline(StagedTaskCollection):
         if rc is not None and rc != 0:
             return rc
 
-        assert os.path.isfile(self.tasks[0].json_file), "Stage0 group file not found."        
+        assert os.path.isfile(self.tasks[0].json_file), "Stage0 group file not found."
 
         with open(self.tasks[0].json_file) as json_file:
             data = json.load(json_file)
@@ -196,9 +216,11 @@ class GCellprofilerPipeline(StagedTaskCollection):
         move them to `self.output_folder`
         merge .csv files into one in case
         """
-        for task in self.tasks[1]:
+        rc = self.tasks[1].execution.returncode
+        for task in self.tasks[1].iter_tasks():
             if isinstance(task, RunCellprofiler) and task.execution.returncode == 0:
-                __combine_cp_directory(task.output_folder,self.output_folder)
+                _combine_cp_directory(task.output_folder,self.output_folder)
+        return rc
 
 class GCellprofilerPipelineScript(SessionBasedScript):
     """
@@ -207,7 +229,7 @@ class GCellprofilerPipelineScript(SessionBasedScript):
     each invocation of the command, the status of all recorded jobs is
     updated, output from finished jobs is collected, and a summary table
     of all known jobs is printed.
-    
+
     Options can specify a maximum number of jobs that should be in
     'SUBMITTED' or 'RUNNING' state; ``gfittingaddm`` will delay submission of
     newly-created jobs so that this limit is never exceeded.
