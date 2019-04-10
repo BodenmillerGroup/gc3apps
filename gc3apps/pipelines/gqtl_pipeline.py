@@ -2,7 +2,7 @@
 #
 #   gqtl_pipeline.py -- Run Cellprofiler in batch mode
 #
-#   Copyright (c) 2018, 2019 S3IT, University of Zurich, http://www.s3it.uzh.ch/
+#   Copyright (c) 2019, 2020 S3IT, University of Zurich, http://www.s3it.uzh.ch/
 #
 #   This program is free software: you can redistribute it and/or
 #   modify
@@ -18,14 +18,12 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-"""
-Step1: Generate groups .json file, used to get index size of batch images
-Step2: generate batch and run cellprofiler in batch mode for each batch
-"""
 
 # summary of user-visible changes
 __changelog__ = """
-  2018-09-13:
+  2019-04-10:
+  * adapted CLI interface
+  2019-03-13:
   * Initial version
 """
 __author__ = 'Sergio Maffioletti <sergio.maffioletti@uzh.ch>'
@@ -43,11 +41,10 @@ import json
 import gc3apps
 import gc3libs
 from gc3libs import Application
-from gc3apps.apps import QTLApplication
-from gc3libs.quantity import Memory, kB, MB, MiB, GB, \
-    Duration, hours, minutes, seconds
+from gc3apps import QTLApplication
 from gc3libs.cmdline import SessionBasedScript, existing_file, \
-    positive_int, existing_directory
+    positive_int, existing_directory, nonnegative_int
+
 
 class GQTLScript(SessionBasedScript):
     """
@@ -73,71 +70,72 @@ class GQTLScript(SessionBasedScript):
             application = Application,
             stats_only_for = Application,
             )
-        
+
     def setup_options(self):
         self.add_param("-d", "--data", metavar="DIRECTORY",
                        type=existing_directory,
                        dest="data", default=os.getenv("PWD"),
-                       help="Location of input data." \
+                       help="Location of input/output data. " \
                        "Default: '%(default)s'.")
 
-        self.add_param("-f", "--forests", metavar="NUM",
+        self.add_param("-b", "--batches", metavar="NUM",
                        type=positive_int,
-                       dest="forests", default=10,
-                       help="number of independent imputations." \
-                       "Default: '%(default)s'.")
-
-        self.add_param("-t", "--trees", metavar="NUM",
-                       type=positive_int,
-                       dest="trees", default=1000,
-                       help="total number of trees numForests X numTrees. " \
-                       "Default: '%(default)s'.")
-
-        self.add_param("-S", "--scores", metavar="NUM",
-                       type=positive_int,
-                       dest="scores", default=1000,
-                       help="number of permutation batches written to individual files." \
+                       dest="batches", default=1000,
+                       help="Number of permutation batches written to individual files. " \
                        "Default: '%(default)s'.")
 
         self.add_param("-p", "--permutations", metavar="NUM",
                        type=positive_int,
                        dest="permutations", default=100,
-                       help="total number of permutations: numPermutedScoresFiles times numPermutations." \
+                       help="Number of permutations per batch (file). " \
                        "Default: '%(default)s'.")
 
-        self.add_param("-t", "--threshold", metavar="NUM",
+        self.add_param("-i", "--imputations", metavar="NUM",
+                       type=positive_int,
+                       dest="imputations", default=10,
+                       help="Number of imputations (forests) per permutation. " \
+                       "Default: '%(default)s'.")
+
+        self.add_param("-t", "--trees", metavar="NUM",
+                       type=positive_int,
+                       dest="trees", default=1000,
+                       help="Number of trees per imputation (forest). " \
+                       "Default: '%(default)s'.")
+
+        self.add_param("--mafthres", metavar="NUM",
                        type=float,
-                       dest="threshold", default=0.9,
-                       help="only consider markers with less than n strains for the major allele." \
+                       dest="mafthres", default=0.9,
+                       help="Major allele frequency (MAF) theshold. " \
                        "Default: '%(default)s'.")
 
-        self.add_param("-q", "--qtl_version", metavar="VERSION",
+        self.add_param("--last", metavar="NUM",
+                       type=nonnegative_int,
+                       dest="last", default=0,
+                       help="Last permutation batch number. " \
+                       "Default: '%(default)s'.")
+
+        self.add_param("--version", metavar="VERSION",
                        type=str,
-                       dest="qtl_version", default="latest",
-                       help="What QTL version should be used." \
+                       dest="version", default="1.1.0",
+                       help="Docker version to be used. " \
                        "Default: '%(default)s'.")
 
         
     def new_tasks(self, extra):
-        """
-        """
         tasks = []
-
-        for phenotypeName in self.params.args:
-        
+        for phenotype in self.params.args:
             extra_args = extra.copy()
-            extra_args['jobname'] = phenotypeName
-
-            extra_args['output_dir'] = self.params.output.replace('NAME',
-                                                                  extra_args['jobname'])
-            tasks.append(QTLApplication(phenotypeName,
+            extra_args['jobname'] = phenotype
+            extra_args['output_dir'] = os.path.abspath(self.params.output.replace('NAME', phenotype))
+            tasks.append(QTLApplication(phenotype,
                                         os.path.abspath(self.params.data),
-                                        self.params.forests,
-                                        self.params.trees,
-                                        self.params.scores,
+                                        self.params.batches,
                                         self.params.permutations,
-                                        self.params.threshold,
-                                        self.params.qtl_version,
+                                        self.params.imputations,
+                                        self.params.trees,
+                                        self.params.mafthres,
+                                        self.params.last,
+                                        self.params.version,
                                         **extra_args))
         return tasks
 

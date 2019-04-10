@@ -24,10 +24,18 @@ class Default(object):
     A namespace for all constants and default values used in the
     package.
     """
+
+    # Suffixes
     CSV_SUFFIX = '.csv'
+
+    # GEneric configs
     DEFAULT_BBSERVER_MOUNT_POINT = "/mnt/bbvolume"
     DEFAULT_FILE_CHECK_MARKER = "done.txt"
-    QTL_COMMAND = "docker run -v {data}:/data -v {output}:/output bblab/qtl:{qtl_version} {phenotypeName} /data /output -f {forests} -t {trees} -s {scores} -p {permutations} -m {threshold}"
+
+    # GQTL
+    QTL_COMMAND = "sudo docker run -v {data}:/data -v {output}:/output bblab/qtl:{version} {phenotype} /data /output -b {batches} -p {permutations} -i {imputations} -t {trees} -m {mafthres} -l {last}"
+
+    # CellProfiler
     CELLPROFILER_DONEFILE = "cp.done"
     CELLPROFILER_GROUPFILE = "cpgroups.json"
     DEFAULT_CELLPROFILER_DOCKER = "bblab/cellprofiler:3.1.8"
@@ -38,7 +46,8 @@ class Default(object):
     GET_CP_GROUPS_FILE = "cp_pipeline_get_groups.sh"
     GET_CP_GROUPS_CMD = "./" + GET_CP_GROUPS_FILE + " -o {output} -p {pipeline} -i {image_data} -w {cp_plugins} -d {docker_image}"
     CELLPROFILER_DOCKER_COMMAND = "sudo docker run -v {batch_file}:{batch_file} {CP_MOUNT_POINT} {docker_image} -c -r -p {batch_file} -f {start} -l {end} --do-not-write-schema --plugins-directory={plugins} -o /output --done-file=/output/"+CELLPROFILER_DONEFILE
-
+    
+    # Ilastik
     DEFAULT_ILASTIK_DOCKER = "ilastik/ilastik-from-binary:1.3.2b3"
     ILASTIK_DOCKER_COMMAND = 'sudo docker run -v {project_file}:{project_file} -v {data_mount_point}:{data_mount_point} -v {output_folder}:/output ' \
             '{docker_image} ' \
@@ -102,24 +111,21 @@ class QTLApplication(Application):
     """
     Run celllineQTL at scale
     """
-    def __init__(self, phenotypeName, dataDirPath, forests, trees, scores, permutations, threshold, qtl_version, **extra_args):
-
-        inputs = dict()
+    def __init__(self, phenotype, path, batches, permutations, imputations, trees, mafthres, last, version, **kwargs):
+        inputs = {}
         outputs = []
-
-        output.append(inputs[dataDirPath])
-        inputs[dataDirPath] = os.path.basename(dataDirPath)
-
-        cmd = gc3apps.Default.QTL_COMMAND.format(output="$PWD/{0}".format(inputs[dataDirPath]),
-                                                 data="$PWD/{0}".format(inputs[dataDirPath]),
-                                                 qtl_version=qtl_version,
-                                                 phenotypeName=phenotypeName,
-                                                 trees=trees,
-                                                 forests=forests,
-                                                 scores=scores,
+        inputs[path] = os.path.basename(path)
+        outputs.append(inputs[path])
+        cmd = gc3apps.Default.QTL_COMMAND.format(version=version,
+                                                 phenotype=phenotype,
+                                                 data="$PWD/{0}".format(inputs[path]),
+                                                 output="$PWD/{0}".format(inputs[path]),
+                                                 batches=batches,
                                                  permutations=permutations,
-                                                 threshold=threshold)
-
+                                                 imputations=imputations,
+                                                 trees=trees,
+                                                 mafthres=mafthres,
+                                                 last=last)
         Application.__init__(
             self,
             arguments = cmd,
@@ -128,8 +134,7 @@ class QTLApplication(Application):
             stdout = 'log',
             join=True,
             executables=[],
-            **extra_args)
-
+            **kwargs)
 
 class RunCellprofiler(Application):
     """
