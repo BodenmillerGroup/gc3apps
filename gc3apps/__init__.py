@@ -110,6 +110,8 @@ class QTLApplication(Application):
     """
     Run celllineQTL at scale
     """
+    application_name = 'qtl'
+
     def __init__(self, phenotype, path, batches, permutations, imputations, trees, mafthres, last, version, **kwargs):
         inputs = {}
         outputs = []
