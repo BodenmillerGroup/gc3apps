@@ -33,7 +33,7 @@ class Default(object):
     DEFAULT_FILE_CHECK_MARKER = "done.txt"
 
     # GQTL
-    QTL_COMMAND = "sudo docker run -v {data}:/data -v {output}:/output bblab/qtl:{version} {phenotype} /data /output -b {batches} -p {permutations} -i {imputations} -t {trees} -m {mafthres} -l {last}"
+    QTL_COMMAND = "sudo docker run -v {data}:/data bblab/qtl:{version} {phenotype} /data /data/output -b {batches} -p {permutations} -i {imputations} -t {trees} -m {mafthres} -l {last}"
 
     # CellProfiler
     CELLPROFILER_DONEFILE = "cp.done"
@@ -113,14 +113,14 @@ class QTLApplication(Application):
     application_name = 'qtl'
 
     def __init__(self, phenotype, path, batches, permutations, imputations, trees, mafthres, last, version, **kwargs):
-        inputs = {}
-        outputs = []
+        inputs = [(path, 'data')]
+        outputs = ['data/results']
+
         inputs[path] = os.path.basename(path)
         outputs.append(inputs[path])
         cmd = gc3apps.Default.QTL_COMMAND.format(version=version,
                                                  phenotype=phenotype,
-                                                 data="$PWD/{0}".format(inputs[path]),
-                                                 output="$PWD/{0}".format(inputs[path]),
+                                                 data="$PWD/data",
                                                  batches=batches,
                                                  permutations=permutations,
                                                  imputations=imputations,
