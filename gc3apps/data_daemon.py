@@ -97,14 +97,14 @@ class InboxProcessingDaemon(SessionBasedDaemon):
                               "the monitored inboxes...".format(subject.path))
             return
 
-        if os.path.basename(subject.path) == gc3apps.Default.DEFAULT_EXPERIMENT_FILE_CHECK_MARKER:
+        if os.path.basename(subject.path).endswith(gc3apps.Default.DEFAULT_EXPERIMENT_FILE_CHECK_MARKER):
             experiment_folder = os.path.dirname(subject.path)
             experiment_folder_name = os.path.dirname(os.path.relpath(subject.path,
                                                                      inbox))
 
             analysis_type = gc3apps.get_analysis_type(experiment_folder)
             if not analysis_type:
-                gc3libs.log.error("No valid analysis type recognized")
+                gc3libs.log.error("No valid analysis for: {0}".format(experiment_folder))
                 return
 
             extra = self.extra.copy()

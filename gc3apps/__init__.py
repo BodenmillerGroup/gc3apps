@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ -*- coding: utf-8 -*-
 
 """Top-level package for gc3apps."""
 
@@ -24,14 +24,14 @@ class Default(object):
     A namespace for all constants and default values used in the
     package.
     """
-
+    
     # Suffixes
     CSV_SUFFIX = '.csv'
 
     # GEneric configs
     DEFAULT_BBSERVER_MOUNT_POINT = "/mnt/bbvolume"
     DEFAULT_FILE_CHECK_MARKER = "done.txt"
-
+    DEFAULT_EXPERIMENT_FILE_CHECK_MARKER = ".zip"
     # GQTL
     QTL_COMMAND = "sudo docker run -v {data}:/data bblab/qtl:{version} {phenotype} /data /data/output -b {batches} -p {permutations} -i {imputations} -t {trees} -m {mafthres} -l {last}"
 
@@ -69,14 +69,16 @@ def get_analysis_type(location):
     Current algorithm:
     * if .fcs file then analysis type sMC
     * if .mcd file then analysis type IMC
-    @param: location of raw data
+    @param: location of raw data in .zip format
     @ return: [IMC, sMC, None]
     """
 
-    for data in os.listdir(location):
-        if data.lower().endswith(".fcs"):
+    # list content of .zip data and return analysis type
+    with zipfile.ZipFile(location) as data:
+        # get analysis type
+        if [dd for dd in data.namelist() if dd.lower().endswith("fcs")]:
             return "sMC"
-        if data.lower().endswith(".mcd"):
+        if [dd for dd in data.namelist() if dd.lower().endswith("mcd")]:
             return "IMC"
     return None
 
