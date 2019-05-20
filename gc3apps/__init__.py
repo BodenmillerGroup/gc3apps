@@ -186,6 +186,9 @@ class QTLApplication(Application):
         command line argument, input/output requirements.
         """
 
+        inputs = dict()
+        outputs = []
+
         inputs[path] = os.path.basename(path)
         outputs.append(inputs[path])
 
