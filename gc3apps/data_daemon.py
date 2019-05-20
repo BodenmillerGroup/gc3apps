@@ -102,30 +102,33 @@ class InboxProcessingDaemon(SessionBasedDaemon):
             experiment_folder_name = os.path.dirname(os.path.relpath(subject.path,
                                                                      inbox))
 
-            analysis_type = gc3apps.get_analysis_type(experiment_folder)
-            if not analysis_type:
-                gc3libs.log.error("No valid analysis for: {0}".format(experiment_folder))
-                return
+            (analysis_type, dataset_name) = gc3apps.get_dataset_information(subject)
+            instrument = get_instrument(subject)
 
             extra = self.extra.copy()
             extra['jobname'] = "{0}_{1}".format(analysis_type,
-                                                experiment_folder_name)
+                                                dataset_name)
             extra['dryrun'] = self.params.dryrun
 
             if analysis_type == 'IMC':
                 self.add(
                     gc3apps.pipelines.IMCPipeline(
-                        os.path.join(inbox,experiment_folder),
+                        subject,
+                        dataset_name,
+                        instrument,
                         self.params.config_file,
                         **extra))
             elif analysis_type == 'sMC':
                 self.add(
                     gc3apps.pipelines.SMCPipeline(
                         os.path.join(inbox,experiment_folder),
+                        dataset_name,
+                        instrument,
                         self.params.config_file,
                         **extra))
             else:
-                gc3libs.log.error("No valid analysis type {0}.".format(analysis_type))
+                gc3libs.log.error("Dataset {0} non valid analysis type: {1}.".format(experiment_folder,
+                                                                                     analysis_type))
                 return
             
     def created(self, inbox, subject):
