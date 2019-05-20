@@ -138,5 +138,3 @@ class GQTLScript(SessionBasedScript):
                                         self.params.version,
                                         **extra_args))
         return tasks
-
-

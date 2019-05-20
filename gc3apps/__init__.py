@@ -8,6 +8,7 @@ __version__ = '0.1.0'
 
 import os
 import json
+import zipfile
 import gc3apps
 import gc3libs
 from gc3libs import Application
@@ -31,9 +32,9 @@ class Default(object):
     # GEneric configs
     DEFAULT_BBSERVER_MOUNT_POINT = "/mnt/bbvolume"
     DEFAULT_FILE_CHECK_MARKER = "done.txt"
-
+    DEFAULT_EXPERIMENT_FILE_CHECK_MARKER = ".zip"
     # GQTL
-    QTL_COMMAND = "sudo docker run -v {data}:/data bblab/qtl:{version} {phenotype} /data /data/output -b {batches} -p {permutations} -i {imputations} -t {trees} -m {mafthres} -l {last}"
+    QTL_COMMAND = "sudo docker run -v {data}:/data -v {output}:/output bblab/qtl:{version} {phenotype} /data /output -b {batches} -p {permutations} -i {imputations} -t {trees} -m {mafthres} -l {last}"
 
     # CellProfiler
     CELLPROFILER_DONEFILE = "cp.done"
@@ -63,22 +64,34 @@ class Default(object):
 # Utilities
 #
 
-def get_analysis_type(location):
+def get_instrument(location):
+    """
+    makes strong assumptions on foldername
+    folder containing filename identifies instrument
+    """
+    return os.path.dirname(fd.filename).split(os.path.sep)[-1]
+
+def get_dataset_info(location):
     """
     Search in location for indicator of analysis type.
     Current algorithm:
     * if .fcs file then analysis type sMC
     * if .mcd file then analysis type IMC
-    @param: location of raw data
+    @param: location of raw data in .zip format
     @ return: [IMC, sMC, None]
     """
 
-    for data in os.listdir(location):
-        if data.lower().endswith(".fcs"):
-            return "sMC"
-        if data.lower().endswith(".mcd"):
-            return "IMC"
-    return None
+    instrument = get_instrument(location)
+
+    # list content of .zip data and return analysis type
+    with zipfile.ZipFile(location) as data:
+        dataset = namelist()
+        # get analysis type
+        if [dd for dd in dataset if dd.lower().endswith("fcs")]:
+            return ("sMC",dataset[0])
+        if [dd for dd in dataset if dd.lower().endswith("mcd")]:
+            return ("IMC",dataset[0])
+    return None,None
 
 whereami = os.path.dirname(os.path.abspath(__file__))
 
@@ -105,6 +118,61 @@ class NotifyApplication(Application):
             executables=[],
             **extra_args)
 
+class PrepareFolders(Application):
+
+    PREPROCESSING = "preprocessing.py"
+
+    """
+    parse metadata and create destination folder accordingly
+    """
+    def __init__(self, data_location, analysis_type, instrument, config_file, **extra_args):
+        """
+        """
+
+        cmd = ["python",
+               os.path.basename(PREPROCESSING),
+               data_location,
+               analysis_type,
+               instrument,
+               config_file
+        ]
+
+        self.output_dir = extra_args['output_dir']
+        self.sample_location = None
+
+        # append location of expected output file
+        cmd.extend(["--output",
+                    "{0}".format(tp_automation.Default.OUTPUT_FILE)])
+
+        gc3libs.log.debug("dryrun setting: {0}".format(extra_args['dryrun']))
+        if extra_args['dryrun']:
+            cmd.append("--dryrun")
+
+        gc3libs.log.info("Running: '{0}'".format(cmd))
+
+        Application.__init__(
+            self,
+            arguments = cmd,
+            inputs = [os.path.join(whereami,PREPROCESSING)],
+            outputs = [],
+            stdout = 'log',
+            join=True,
+            executables=[],
+            **extra_args)
+
+    def terminated(self):
+        """
+        Check whether output file exists
+        extract its content and store it in self
+        """
+        sample_location = os.path.join(self.output_dir,
+                                       tp_automation.Default.OUTPUT_FILE)
+        if os.path.isfile(sample_location):
+            with open(sample_location,"r") as fd:
+                self.sample_location = fd.read().strip()
+        else:
+            gc3libs.log.warning("Sample output file {0} not found".format(sample_location))
+
 
 class QTLApplication(Application):
     """
@@ -113,14 +181,18 @@ class QTLApplication(Application):
     application_name = 'qtl'
 
     def __init__(self, phenotype, path, batches, permutations, imputations, trees, mafthres, last, version, **kwargs):
-        inputs = [(path, 'data')]
-        outputs = ['data/results']
+        """
+        Crate GC3Pie application object by specifying the dictionary with
+        command line argument, input/output requirements.
+        """
 
         inputs[path] = os.path.basename(path)
         outputs.append(inputs[path])
+
         cmd = gc3apps.Default.QTL_COMMAND.format(version=version,
                                                  phenotype=phenotype,
-                                                 data="$PWD/data",
+                                                 data="$PWD/{0}".format(inputs[path]),
+                                                 output="$PWD/{0}".format(inputs[path]),
                                                  batches=batches,
                                                  permutations=permutations,
                                                  imputations=imputations,
