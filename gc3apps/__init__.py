@@ -8,6 +8,7 @@ __version__ = '0.1.0'
 
 import os
 import json
+import yaml
 import zipfile
 import gc3apps
 import gc3libs
@@ -17,6 +18,63 @@ from gc3apps.utils.h5parse import CPparser
 #####################
 # Configuration
 
+
+def parse_config_file(config_file):
+    """
+    Parse config file and verify mandatrory
+    fileds have been specified
+    """
+    with open(config_file, 'r') as fd:
+        try:
+            cfg = yaml.load(fd)
+            assert cfg.has_key("experiment"), "Missing 'experiment' section in config file"
+            assert cfg["experiment"].has_key("raw_data_destination"), "Missing 'raw_data_destination' section in config file"
+            assert cfg["experiment"].has_key("subfolders"), "Missing 'subfolders' section in config file"
+
+            assert cfg.has_key("IMC"), "Missing IMC section in config file"
+            assert cfg.has_key("sMC"), "Missing sMC section in config file"
+
+            _parse_IMC_config(cfg['IMC'])
+            _parse_sMC_config(cfg['sMC'])
+
+            return cfg
+        except Exception as ex:
+	    gc3libs.log.error("Failed parsing config file {0}. "
+                              "Error {1}:{2}".format(config_file,
+                                                     type(ex),
+                                                     str(ex)))
+            pass
+    return None
+
+def _parse_IMC_config(cfg):
+    """
+    Parse IMC specific requirements
+    """
+    assert cfg.has_key("allow_append_raw_data"), "Missing 'allow_append' section in config IMC"
+    assert cfg.has_key("repo"), "Missing 'repo' section in config IMC"
+    assert cfg['repo'].has_key("source"), "Missing 'repo/source' section in config IMC"
+    assert cfg['repo'].has_key("branch"), "Missing 'repo/branch' section in config IMC"
+    assert cfg['repo'].has_key("location"), "Missing 'repo/location' section in config IMC"
+    assert cfg.has_key("metadata"), "Missing 'metadata' section in config IMC"
+    assert cfg.has_key("derived_subfolders"), "Missing 'derived_subfolders' section in config IMC"
+    assert cfg['derived_subfolders'].has_key("analysis"), "Missing 'derived_subfolders/analysis' section in config IMC"
+    assert cfg['derived_subfolders'].has_key("cellprofiler"), "Missing 'derived_subfolders/cellprofiler' section in config IMC"
+    assert cfg['derived_subfolders'].has_key("ilastik"), "Missing 'derived_subfolders/ilastik' section in config IMC"
+    assert cfg['derived_subfolders'].has_key("ome"), "Missing 'derived_subfolders/ome' section in config IMC"
+    assert cfg['derived_subfolders'].has_key("uncertainty"), "Missing 'derived_subfolders/uncertainty' section in config IMC"
+    assert cfg['derived_subfolders'].has_key("histocat"), "Missing 'derived_subfolders/histocat' section in config IMC"
+
+
+def _parse_sMC_config(cfg):
+    """
+    Parse sMC specific requirements
+    """
+    assert cfg.has_key("allow_append_raw_data"), "Missing 'allow_append' section in config sMC"
+    assert cfg.has_key("repo"), "Missing 'repo' section in config sMC"
+    assert cfg['repo'].has_key("source"), "Missing 'repo/source' section in config sMC"
+    assert cfg['repo'].has_key("branch"), "Missing 'repo/branch' section in config sMC"
+    assert cfg['repo'].has_key("location"), "Missing 'repo/location' section in config sMC"
+    assert cfg.has_key("panels"), "Missing 'panels' section in config sMC"
 
 # Defaults
 class Default(object):
@@ -29,10 +87,12 @@ class Default(object):
     # Suffixes
     CSV_SUFFIX = '.csv'
 
-    # GEneric configs
+    # Generic configs
     DEFAULT_BBSERVER_MOUNT_POINT = "/mnt/bbvolume"
     DEFAULT_FILE_CHECK_MARKER = "done.txt"
     DEFAULT_EXPERIMENT_FILE_CHECK_MARKER = ".zip"
+    DEFAULT_OUTPUT_FOLDER = "output"
+
     # GQTL
     QTL_COMMAND = "sudo docker run -v {data}:/data -v {output}:/output bblab/qtl:{version} {phenotype} /data /output -b {batches} -p {permutations} -i {imputations} -t {trees} -m {mafthres} -l {last}"
 
@@ -66,10 +126,12 @@ class Default(object):
 
 def get_instrument(location):
     """
-    makes strong assumptions on foldername
+    **Warning**:
+    This method makes strong assumptions on foldername
     folder containing filename identifies instrument
+    expected location format: '/source_prefix/instrument/dataset_name.zip'
     """
-    return os.path.dirname(fd.filename).split(os.path.sep)[-1]
+    return os.path.dirname(location).split(os.path.sep)[-1]
 
 def get_dataset_info(location):
     """
@@ -80,17 +142,17 @@ def get_dataset_info(location):
     @param: location of raw data in .zip format
     @ return: [IMC, sMC, None]
     """
-
+    
     instrument = get_instrument(location)
     
     # list content of .zip data and return analysis type
     with zipfile.ZipFile(location) as data:
-        dataset = namelist()
+        dataset = data.namelist()
         # get analysis type
         if [dd for dd in dataset if dd.lower().endswith("fcs")]:
-            return ("sMC",dataset[0])
+            return ("sMC",os.path.dirname(dataset[0]))
         if [dd for dd in dataset if dd.lower().endswith("mcd")]:
-            return ("IMC",dataset[0])
+            return ("IMC",os.path.dirname(dataset[0]))
     return None,None
 
 whereami = os.path.dirname(os.path.abspath(__file__))
@@ -125,62 +187,80 @@ class PrepareFolders(Application):
     """
     parse metadata and create destination folder accordingly
     """
-    def __init__(self, data_location, analysis_type, instrument, config_file, **extra_args):
+    def __init__(self, data_location, destination, subfolders, analysis_type, raw_data_destination, **extra_args):
         """
         """
-
         cmd = ["python",
-               os.path.basename(PREPROCESSING),
+               os.path.basename(PrepareFolders.PREPROCESSING),
                data_location,
+               destination,
                analysis_type,
-               instrument,
-               config_file
+               "-f",
+               ",".join(subfolders),
+               "-r",
+               raw_data_destination,
+               "-vvvv",
         ]
 
-        self.output_dir = extra_args['output_dir']
-        self.sample_location = None
-
-        # append location of expected output file
-        cmd.extend(["--output",
-                    "{0}".format(tp_automation.Default.OUTPUT_FILE)])
-
-        gc3libs.log.debug("dryrun setting: {0}".format(extra_args['dryrun']))
-        if extra_args['dryrun']:
+        if extra_args.has_key('dryrun') and extra_args['dryrun']:
             cmd.append("--dryrun")
-
-        gc3libs.log.info("Running: '{0}'".format(cmd))
 
         Application.__init__(
             self,
             arguments = cmd,
-            inputs = [os.path.join(whereami,PREPROCESSING)],
+            inputs = [os.path.join(whereami,'etc',PrepareFolders.PREPROCESSING)],
             outputs = [],
             stdout = 'log',
             join=True,
             executables=[],
             **extra_args)
 
-    def terminated(self):
-        """
-        Check whether output file exists
-        extract its content and store it in self
-        """
-        sample_location = os.path.join(self.output_dir,
-                                       tp_automation.Default.OUTPUT_FILE)
-        if os.path.isfile(sample_location):
-            with open(sample_location,"r") as fd:
-                self.sample_location = fd.read().strip()
-        else:
-            gc3libs.log.warning("Sample output file {0} not found".format(sample_location))
+class IMCPreprocessing(Application):
+    """
+    Parse .mcd and .txt files to extract metadata
+    store metadata in .csv file
+    convert images into ometiff
+    """
 
+    application = 'imc_preprocessing'
+    RUNNER = "imc_preprocessing.py"
 
+    def __init__(self, data_source, raw_data_location, metadata_location, imc_cfg, **extra_args):
+        cmd = ["python",
+               os.path.basename(IMCPreprocessing.RUNNER),
+               data_source,
+               "--raw",
+               raw_data_location,
+               "--scripts",
+               metadata_location,
+               "--ometiff",
+               imc_cfg['derived_subfolders']['ome'],
+               "--analysis",
+               imc_cfg['derived_subfolders']['analysis'],
+               "--cellprofiler",
+               imc_cfg['derived_subfolders']['cellprofiler'],
+               "-vvvv",
+        ]
+            
+        # gc3libs.log.info("Running: '{0}'".format(cmd))
+        Application.__init__(
+            self,
+            arguments = cmd,
+            inputs = [os.path.join(whereami,'etc',IMCPreprocessing.RUNNER)],
+            outputs = [],
+            stdout = 'log',
+            join=True,
+            executables=[],
+            **extra_args)
+        
+        
 class QTLApplication(Application):
     """
     Run celllineQTL at scale
     """
     application_name = 'qtl'
 
-    def __init__(self, phenotype, path, batches, permutations, imputations, trees, mafthres, last, version, **kwargs):
+    def __init__(self, phenotype, path, batches, permutations, imputations, trees, mafthres, last, version, **extra_args):
         """
         Crate GC3Pie application object by specifying the dictionary with
         command line argument, input/output requirements.
@@ -207,7 +287,7 @@ class QTLApplication(Application):
             stdout = 'log',
             join=True,
             executables=[],
-            **kwargs)
+            **extra_args)
 
 class RunCellprofiler(Application):
     """
@@ -285,7 +365,7 @@ class RunCellprofilerGetGroups(Application):
                                                        cp_plugins=plugins,
                                                        docker_image=self.docker_image)
 
-	gc3libs.log.debug("In RunCellprofilerGetGroups running {0}.".format(cmd))
+	# gc3libs.log.debug("In RunCellprofilerGetGroups running {0}.".format(cmd))
 
         Application.__init__(
             self,

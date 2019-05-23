@@ -29,15 +29,17 @@ import os
 import sys
 import gc3apps
 import gc3libs
+import zipfile
 import gc3apps.pipelines
 from fnmatch import fnmatch
 from os.path import basename
+import gc3apps.pipelines.smcpipeline as smc
+import gc3apps.pipelines.imcpipeline as imc
 from gc3libs import Application, Run, Task
 from gc3libs.cmdline import SessionBasedDaemon, \
     existing_file, existing_directory
 from gc3libs.quantity import Memory, kB, MB, MiB, \
     GB, Duration, hours, minutes, seconds
-
 class InboxProcessingDaemon(SessionBasedDaemon):
     """
     Run a given command on all files created within the given inboxj
@@ -58,7 +60,14 @@ class InboxProcessingDaemon(SessionBasedDaemon):
                        type=existing_file,
                        help="Location of preprocessing pipeline "
                        "configuration file.")
-       
+
+        self.add_param("-D", "--dryrun",
+                       dest='dryrun',
+                       action='store_true',
+                       default=False,
+                       help="Run in dryrun mode - no actions taken on " \
+                       " input data . Default: %(default)s.")
+
     def _get_inbox_from_subject(self, subject):
         """
         Return the first inbox path corresponding to the location
@@ -92,36 +101,40 @@ class InboxProcessingDaemon(SessionBasedDaemon):
         """
         gc3libs.log.info("Reacting to subject {0}".format(subject))
         inbox = self._get_inbox_from_subject(subject)
+        data_location = subject.path
         if not inbox:
             gc3libs.log.error("Somehow a subject has been created and notified outside "
-                              "the monitored inboxes...".format(subject.path))
+                              "the monitored inboxes...".format(data_location))
             return
 
-        if os.path.basename(subject.path).endswith(gc3apps.Default.DEFAULT_EXPERIMENT_FILE_CHECK_MARKER):
-            experiment_folder = os.path.dirname(subject.path)
-            experiment_folder_name = os.path.dirname(os.path.relpath(subject.path,
+        if zipfile.is_zipfile(data_location):
+            # if os.path.basename(data_location).endswith(gc3apps.Default.DEFAULT_EXPERIMENT_FILE_CHECK_MARKER):
+            experiment_folder = os.path.dirname(data_location)
+            experiment_folder_name = os.path.dirname(os.path.relpath(data_location,
                                                                      inbox))
 
-            (analysis_type, dataset_name) = gc3apps.get_dataset_information(subject)
-            instrument = get_instrument(subject)
+            (analysis_type, dataset_name) = gc3apps.get_dataset_info(data_location)
+            instrument = gc3apps.get_instrument(data_location)
 
             extra = self.extra.copy()
             extra['jobname'] = "{0}_{1}".format(analysis_type,
                                                 dataset_name)
             extra['dryrun'] = self.params.dryrun
+            extra['output_dir'] = self.params.output.replace('NAME', extra['jobname'])
 
+            gc3libs.log.info("Creating pipeline for {0} analysis".format(analysis_type))
             if analysis_type == 'IMC':
                 self.add(
-                    gc3apps.pipelines.IMCPipeline(
-                        subject,
+                    imc.IMCPipeline(
+                        data_location,
                         dataset_name,
                         instrument,
                         self.params.config_file,
                         **extra))
             elif analysis_type == 'sMC':
                 self.add(
-                    gc3apps.pipelines.SMCPipeline(
-                        os.path.join(inbox,experiment_folder),
+                    smc.SMCPipeline(
+                        data_location,
                         dataset_name,
                         instrument,
                         self.params.config_file,

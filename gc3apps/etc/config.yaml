@@ -1,0 +1,60 @@
+experiment:
+  raw_data_destination: /var/tmp/bblab
+  subfolders:
+    raw: &raw_data raw
+    scripts: &script_folder scripts
+
+IMC:
+  csv_panel:
+    metal: MetalTag
+    ilastik: ilastik_cells
+    full: full
+
+  suffix:
+    full: _full
+    ilastik: _ilastik
+    ilastik_scale: _s2
+    mask: _mask.tiff
+    probablities: _Probabilities
+
+  allow_append_raw_data: True
+
+  repo:
+    source: git@github.com:BodenmillerGroup/tumorprofiler_imc.git
+    branch: 'master'
+    location: *script_folder
+
+  metadata:
+     cellprofiler:
+        version: 2.3.1
+        segment_simple: 1_segment_simple.cppipe
+        measure_mask: 2_measure_mask.cppipe
+     ilastik:
+        version:
+        segmentation: IMC_Segmentation_Parameters.ilp
+     panel: IMC_M_Panel.csv
+     I_panel: IMC_I_Panel.csv
+     M_panel: IMC_M_Panel.csv
+     location: *script_folder
+
+  derived_subfolders:
+     analysis: analysis
+     cellprofiler: cpout
+     ilastik: ilastik
+     ome: ome
+     uncertainty: uncertainty
+     histocat: histocat
+
+sMC:
+  classifier:
+     M: /data/processing/sMC/M/utils/ # link the whole folder in `scripts`
+     O: /data/processing/sMC/T/utils/ # link the whole folder in `scripts`
+  panels:
+     M: raw/raw_T
+     I: raw/raw_I
+     G: raw/raw_T  
+  allow_append_raw_data: False
+  repo:
+    source: git@github.com:BodenmillerGroup/TumorProfiler.git
+    branch: 'master'
+    location: *script_folder
