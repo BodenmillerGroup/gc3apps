@@ -108,7 +108,6 @@ class InboxProcessingDaemon(SessionBasedDaemon):
             return
 
         if zipfile.is_zipfile(data_location):
-            # if os.path.basename(data_location).endswith(gc3apps.Default.DEFAULT_EXPERIMENT_FILE_CHECK_MARKER):
             experiment_folder = os.path.dirname(data_location)
             experiment_folder_name = os.path.dirname(os.path.relpath(data_location,
                                                                      inbox))
@@ -122,28 +121,31 @@ class InboxProcessingDaemon(SessionBasedDaemon):
             extra['dryrun'] = self.params.dryrun
             extra['output_dir'] = self.params.output.replace('NAME', extra['jobname'])
 
-            gc3libs.log.info("Creating pipeline for {0} analysis".format(analysis_type))
-            if analysis_type == 'IMC':
-                self.add(
-                    imc.IMCPipeline(
-                        data_location,
-                        dataset_name,
-                        instrument,
-                        self.params.config_file,
-                        **extra))
-            elif analysis_type == 'sMC':
-                self.add(
-                    smc.SMCPipeline(
-                        data_location,
-                        dataset_name,
-                        instrument,
-                        self.params.config_file,
-                        **extra))
+            if analysis_type:
+                gc3libs.log.info("Creating pipeline for {0} analysis".format(analysis_type))
+                if analysis_type == 'IMC':
+                    self.add(
+                        imc.IMCPipeline(
+                            data_location,
+                            dataset_name,
+                            instrument,
+                            self.params.config_file,
+                            **extra))
+                elif analysis_type == 'sMC':
+                    self.add(
+                        smc.SMCPipeline(
+                            data_location,
+                            dataset_name,
+                            instrument,
+                            self.params.config_file,
+                            **extra))
+                else:
+                    gc3libs.log.error("Dataset {0} non valid analysis type: {1}.".format(data_location,
+                                                                                         analysis_type))
+                    return
             else:
-                gc3libs.log.error("Dataset {0} non valid analysis type: {1}.".format(experiment_folder,
-                                                                                     analysis_type))
-                return
-            
+                gc3libs.log.warning("Skipping dataset {0} for None analysis_type".format(data_location))
+                
     def created(self, inbox, subject):
         """
         Check whether folder has been completed with file_check marker.
