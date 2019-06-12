@@ -45,6 +45,8 @@ from gc3apps import QTLApplication
 from gc3libs.cmdline import SessionBasedScript, existing_file, \
     positive_int, existing_directory, nonnegative_int
 
+BATCH_TRESHOLD = 1000
+
 
 class GQTLScript(SessionBasedScript):
     """
@@ -124,17 +126,20 @@ class GQTLScript(SessionBasedScript):
     def new_tasks(self, extra):
         tasks = []
         for phenotype in self.params.args:
-            extra_args = extra.copy()
-            extra_args['jobname'] = phenotype
-            extra_args['output_dir'] = os.path.abspath(self.params.output.replace('NAME', phenotype))
-            tasks.append(QTLApplication(phenotype,
-                                        os.path.abspath(self.params.data),
-                                        self.params.batches,
-                                        self.params.permutations,
-                                        self.params.imputations,
-                                        self.params.trees,
-                                        self.params.mafthres,
-                                        self.params.last,
-                                        self.params.version,
-                                        **extra_args))
+            for batch in range(0,(self.params.batches / BATCH_TRESHOLD)):
+                extra_args = extra.copy()
+                extra_args['jobname'] = "{0}_batch_{1}".format(phenotype,
+                                                               batch)
+                extra_args['output_dir'] = os.path.abspath(self.params.output.replace('NAME',
+                                                                                      extra_args['jobname']))
+                tasks.append(QTLApplication(phenotype,
+                                            os.path.abspath(self.params.data),
+                                            BATCH_TRESHOLD + (BATCH_TRESHOLD * batch),
+                                            self.params.permutations,
+                                            self.params.imputations,
+                                            self.params.trees,
+                                            self.params.mafthres,
+                                            (batch * BATCH_TRESHOLD),
+                                            self.params.version,
+                                            **extra_args))
         return tasks
