@@ -122,6 +122,13 @@ class GQTLScript(SessionBasedScript):
                        help="Docker version to be used. " \
                        "Default: '%(default)s'.")
 
+
+    def parse_args(self):
+        assert self.params.last < self.params.batches, "Last {0} cannot be higher than the whole batch {1}.".format(self.params.last,
+                                                                                                                    self.params.batches)
+
+        # if `last` provided, skip the first `last` from batches
+        self.params.batches -= self.params.last
         
     def new_tasks(self, extra):
         tasks = []
