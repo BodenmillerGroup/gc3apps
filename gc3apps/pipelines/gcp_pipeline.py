@@ -203,6 +203,7 @@ class GCellprofilerPipeline(StagedTaskCollection):
                 os.makedirs(output_folder_batch)
                 os.chmod(output_folder_batch, 0777)
             tasks.append(RunCellprofiler(batch_file,
+                                         self.input_folder,
                                          output_folder_batch,
                                          start,
                                          end,
