@@ -145,6 +145,7 @@ if __name__ == "__main__":
     else:
         subfolders = [args.raw_data_destination]
 
+    assert not os.path.isdir(args.destination), "Experiment destination folder {0} already exists".format(args.destination)
     assert args.raw_data_destination in subfolders, "Raw data destination {0} not in the list of subfolders to be created {1}".format(args.raw_data_destination,
                                                                                                                                       subfolders)
 
