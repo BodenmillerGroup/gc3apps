@@ -30,6 +30,7 @@ __version__ = '1.0.1'
 
 import os
 import gc3libs
+from gc3libs import Run
 import gc3apps
 from gc3libs.workflow import StagedTaskCollection
 
@@ -72,7 +73,7 @@ class IMCPipeline(StagedTaskCollection):
             self.subfolders += self.cfg['IMC']['derived_subfolders'].values()
 
         StagedTaskCollection.__init__(self)
-        
+
     def stage0(self):
         """
         Step 0: Generate folders structure accroding to config file
