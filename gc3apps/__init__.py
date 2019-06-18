@@ -296,7 +296,7 @@ class RunCellprofiler(Application):
 
     application_name = 'runcellprofiler'
 
-    def __init__(self, batch_file, output_folder, start_index, end_index, cp_plugins, **extra_args):
+    def __init__(self, batch_file, input_folder, output_folder, start_index, end_index, cp_plugins, **extra_args):
 
         inputs = dict()
         outputs = []
@@ -310,7 +310,7 @@ class RunCellprofiler(Application):
         self.output_folder = output_folder
 
         command = gc3apps.Default.CELLPROFILER_DOCKER_COMMAND.format(batch_file="$PWD/{0}".format(inputs[batch_file]),
-                                                                     data_mount_point=gc3apps.Default.DEFAULT_BBSERVER_MOUNT_POINT,
+                                                                     data_mount_point=input_folder,
                                                                      docker_image = self.docker_image,
                                                                      start=start_index,
                                                                      end=end_index,
