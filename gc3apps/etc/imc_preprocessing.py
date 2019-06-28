@@ -146,12 +146,14 @@ def main(data_location, raw_location, scripts_location, ome_location, analysis_l
                                                      dozip=False)     
 
     # Generate analysis stacks
-    log.info("generate analysis stacks")
-    generate_analysis_stack(ome_location, analysis_location)
+    if analysis_location and os.path.isdir(analysis_location):
+        log.info("generate analysis stacks")
+        generate_analysis_stack(ome_location, analysis_location)
 
     # Generate a csv with all the acquisition scripts
-    log.info("Generate a csv with all the acquisition scripts")
-    exportacquisitioncsv.export_acquisition_csv(ome_location, fol_out= cp_location)
+    if cp_location and os.path.isdir(cp_location):
+        log.info("Generate a csv with all the acquisition scripts")
+        exportacquisitioncsv.export_acquisition_csv(ome_location, fol_out=cp_location)
 
     # Done
     log.info("Done")
