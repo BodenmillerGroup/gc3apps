@@ -206,10 +206,10 @@ if __name__ == "__main__":
     analysis_location = os.path.join(args.data_location,args.analysis)
     cp_location = os.path.join(args.data_location,args.cellprofiler)
 
-    assert os.path.isdir(raw_location), "Folder {0} not found".format(raw_location)
-    assert os.path.isdir(scripts_location), "Folder {0} not found".format(scripts_location)
-    assert os.path.isdir(ome_location), "Folder {0} not found".format(ome_location)
-    assert os.path.isdir(analysis_location), "Folder {0} not found".format(analysis_location)
-    assert os.path.isdir(cp_location), "Folder {0} not found".format(cp_location)
+    # assert os.path.isdir(raw_location), "Folder {0} not found".format(raw_location)
+    # assert os.path.isdir(scripts_location), "Folder {0} not found".format(scripts_location)
+    # assert os.path.isdir(ome_location), "Folder {0} not found".format(ome_location)
+    # assert os.path.isdir(analysis_location), "Folder {0} not found".format(analysis_location)
+    # assert os.path.isdir(cp_location), "Folder {0} not found".format(cp_location)
 
     sys.exit(main(args.data_location, raw_location, scripts_location, ome_location, analysis_location, cp_location))

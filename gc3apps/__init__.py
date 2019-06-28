@@ -58,12 +58,13 @@ def _parse_IMC_config(cfg):
     assert cfg.has_key("metadata"), "Missing 'metadata' section in config IMC"
     assert cfg.has_key("derived_subfolders"), "Missing 'derived_subfolders' section in config IMC"
     assert cfg['derived_subfolders'].has_key("ome"), "Missing 'derived_subfolders/ome' section in config IMC"
-    # assert cfg['derived_subfolders'].has_key("analysis"), "Missing 'derived_subfolders/analysis' section in config IMC"
-    # assert cfg['derived_subfolders'].has_key("cellprofiler"), "Missing 'derived_subfolders/cellprofiler' section in config IMC"
-    # assert cfg['derived_subfolders'].has_key("ilastik"), "Missing 'derived_subfolders/ilastik' section in config IMC"
-    # assert cfg['derived_subfolders'].has_key("uncertainty"), "Missing 'derived_subfolders/uncertainty' section in config IMC"
-    # assert cfg['derived_subfolders'].has_key("histocat"), "Missing 'derived_subfolders/histocat' section in config IMC"
 
+    # Set optionals
+    cfg['derived_subfolders'].setdefault("analysis", None)
+    cfg['derived_subfolders'].setdefault("cellprofiler", None)
+    cfg['derived_subfolders'].setdefault("ilastik", None)
+    cfg['derived_subfolders'].setdefault("uncertainty", None)
+    cfg['derived_subfolders'].setdefault("histocat", None)
 
 def _parse_sMC_config(cfg):
     """
