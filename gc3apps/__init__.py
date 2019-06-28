@@ -34,8 +34,8 @@ def parse_config_file(config_file):
             assert cfg.has_key("IMC"), "Missing IMC section in config file"
             assert cfg.has_key("sMC"), "Missing sMC section in config file"
 
-            _parse_IMC_config(cfg['IMC'])
-            _parse_sMC_config(cfg['sMC'])
+            cfg = _parse_IMC_config(cfg['IMC'])
+            cfg = _parse_sMC_config(cfg['sMC'])
 
             return cfg
         except Exception as ex:
@@ -66,6 +66,8 @@ def _parse_IMC_config(cfg):
     cfg['derived_subfolders'].setdefault("uncertainty", None)
     cfg['derived_subfolders'].setdefault("histocat", None)
 
+    return cfg
+
 def _parse_sMC_config(cfg):
     """
     Parse sMC specific requirements
@@ -76,6 +78,8 @@ def _parse_sMC_config(cfg):
     assert cfg['repo'].has_key("branch"), "Missing 'repo/branch' section in config sMC"
     assert cfg['repo'].has_key("location"), "Missing 'repo/location' section in config sMC"
     assert cfg.has_key("panels"), "Missing 'panels' section in config sMC"
+
+    return cfg
 
 # Defaults
 class Default(object):
