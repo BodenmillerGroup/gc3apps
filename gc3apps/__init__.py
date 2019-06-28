@@ -34,8 +34,8 @@ def parse_config_file(config_file):
             assert cfg.has_key("IMC"), "Missing IMC section in config file"
             assert cfg.has_key("sMC"), "Missing sMC section in config file"
 
-            cfg = _parse_IMC_config(cfg['IMC'])
-            cfg = _parse_sMC_config(cfg['sMC'])
+            cfg['IMC'] = _parse_IMC_config(cfg['IMC'])
+            cfg['sMC'] = _parse_sMC_config(cfg['sMC'])
 
             return cfg
         except Exception as ex:
