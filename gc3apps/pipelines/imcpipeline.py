@@ -68,7 +68,7 @@ class IMCPipeline(StagedTaskCollection):
 
         self.raw_data_destination = self.cfg['experiment']['subfolders']['raw']
         self.metadata = self.cfg['experiment']['subfolders']['scripts']
-        self.subfolders = [fodler for folder in self.cfg['experiment']['subfolders'].values() if folder]
+        self.subfolders = [folder for folder in self.cfg['experiment']['subfolders'].values() if folder]
         if self.cfg['IMC'].has_key('derived_subfolders'):
             self.subfolders += self.cfg['IMC']['derived_subfolders'].values()
 
