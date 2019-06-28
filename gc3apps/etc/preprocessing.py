@@ -25,17 +25,10 @@ Changelog:
 
 import sys
 import os
-import re
-import pwd
-import yaml
-import shutil
 import zipfile
 import logging
 import argparse
-import imctools
 import logging.config
-import imctools.scripts
-from yaml.parser import ParserError, ScannerError
 
 logging.basicConfig()
 log = logging.getLogger()
