@@ -124,16 +124,17 @@ class GQTLScript(SessionBasedScript):
 
 
     def parse_args(self):
-        assert self.params.last < self.params.batches, "Last {0} cannot be higher than the whole batch {1}.".format(self.params.last,
-                                                                                                                    self.params.batches)
+    #     assert self.params.last < self.params.batches, "Last {0} cannot be higher than the whole batch {1}.".format(self.params.last,
+    #                                                                                                                 self.params.batches)
+    #
+    #     # if `last` provided, skip the first `last` from batches
+    #     self.params.batches -= self.params.last
+        assert self.params.batches % BATCH_THRESHOLD == 0
 
-        # if `last` provided, skip the first `last` from batches
-        self.params.batches -= self.params.last
-        
     def new_tasks(self, extra):
         tasks = []
         for phenotype in self.params.args:
-            for batch in range(0,(self.params.batches / BATCH_TRESHOLD)):
+            for batch in range(0, (self.params.batches / BATCH_TRESHOLD)):
                 extra_args = extra.copy()
                 extra_args['jobname'] = "{0}_batch_{1}".format(phenotype,
                                                                batch)
@@ -141,12 +142,12 @@ class GQTLScript(SessionBasedScript):
                                                                                       extra_args['jobname']))
                 tasks.append(QTLApplication(phenotype,
                                             os.path.abspath(self.params.data),
-                                            BATCH_TRESHOLD + (BATCH_TRESHOLD * batch),
+                                            BATCH_TRESHOLD,
                                             self.params.permutations,
                                             self.params.imputations,
                                             self.params.trees,
                                             self.params.mafthres,
-                                            (batch * BATCH_TRESHOLD),
+                                            self.params.last + (batch * BATCH_TRESHOLD),
                                             self.params.version,
                                             **extra_args))
         return tasks
