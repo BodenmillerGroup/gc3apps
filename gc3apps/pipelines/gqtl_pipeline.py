@@ -45,7 +45,7 @@ from gc3apps import QTLApplication
 from gc3libs.cmdline import SessionBasedScript, existing_file, \
     positive_int, existing_directory, nonnegative_int
 
-BATCH_TRESHOLD = 1000
+BATCH_THRESHOLD = 1000
 
 
 class GQTLScript(SessionBasedScript):
