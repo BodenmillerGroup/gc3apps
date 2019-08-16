@@ -134,7 +134,7 @@ class GQTLScript(SessionBasedScript):
     def new_tasks(self, extra):
         tasks = []
         for phenotype in self.params.args:
-            for batch in range(0, (self.params.batches / BATCH_TRESHOLD)):
+            for batch in range(0, (self.params.batches / BATCH_THRESHOLD)):
                 extra_args = extra.copy()
                 extra_args['jobname'] = "{0}_batch_{1}".format(phenotype,
                                                                batch)
@@ -142,12 +142,12 @@ class GQTLScript(SessionBasedScript):
                                                                                       extra_args['jobname']))
                 tasks.append(QTLApplication(phenotype,
                                             os.path.abspath(self.params.data),
-                                            BATCH_TRESHOLD,
+                                            BATCH_THRESHOLD,
                                             self.params.permutations,
                                             self.params.imputations,
                                             self.params.trees,
                                             self.params.mafthres,
-                                            self.params.last + (batch * BATCH_TRESHOLD),
+                                            self.params.last + (batch * BATCH_THRESHOLD),
                                             self.params.version,
                                             **extra_args))
         return tasks
